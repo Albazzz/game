@@ -26,7 +26,7 @@
 
     function createRoom(gameType, button) {
         button.disabled = true;
-        global.ArenaApi.createRoom({ gameType: gameType, visibility: 'PRIVATE' })
+        global.ArenaApi.createRoom({ gameType: gameType, visibility: 'PUBLIC' })
             .then(goToRoom)
             .catch(function (err) {
                 button.disabled = false;

@@ -9,6 +9,7 @@
         var options = {
             method: method,
             credentials: 'same-origin',
+            cache: 'no-store',
             headers: { 'Accept': 'application/json' }
         };
         if (body !== undefined && body !== null) {
@@ -43,7 +44,8 @@
             return request('GET', '/api/games/catalog');
         },
         lobbyRooms: function () {
-            return request('GET', '/api/games/lobby/rooms');
+            // Danh sách phòng thay đổi liên tục; tránh trình duyệt trả lại response rỗng cũ.
+            return request('GET', '/api/games/lobby/rooms?_=' + Date.now());
         },
         lobbyStats: function () {
             return request('GET', '/api/games/lobby/stats');

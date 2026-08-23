@@ -146,7 +146,7 @@
             if (duel && i === 0) {
                 var divider = document.createElement('div');
                 divider.className = 'versus__divider jp';
-                divider.textContent = '対';
+                divider.textContent = 'VS';
                 host.appendChild(divider);
             }
         }

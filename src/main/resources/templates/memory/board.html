@@ -8,7 +8,7 @@
     <link rel="stylesheet" th:href="@{/arena/css/base.css}">
     <link rel="stylesheet" th:href="@{/arena/app/memory/memory-app.css}">
 </head>
-<body>
+<body class="memory-page">
 <nav th:replace="~{fragments/layout :: nav('games')}"></nav>
 
 <div id="memory-root" th:attr="data-session-id=${sessionId}">
