@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/layout :: head('Đăng nhập · Game Arena')}"></head>
+<body th:attr="data-google-client-id=${googleClientId != null ? googleClientId : ''}">
+
+<main style="min-height:100vh; display:grid; place-items:center; padding: var(--sp-5);">
+    <section class="panel" style="width:min(420px, 100%);">
+        <div class="panel__head" style="flex-direction:column; align-items:flex-start; gap:var(--sp-1)">
+            <span class="arena-nav__brand">
+                <span class="arena-nav__mark jp" aria-hidden="true">闘</span>
+                <span>J-LAS <strong>Arena</strong></span>
+            </span>
+            <p style="margin:0; color:var(--text-low); font-size:var(--fs-sm)">
+                Đăng nhập để vào sảnh đấu
+            </p>
+        </div>
+        <div class="panel__body">
+            <div style="display:flex; gap:var(--sp-2); margin-bottom:var(--sp-5)">
+                <button type="button" class="btn btn--primary" style="flex:1" data-tab="login">
+                    Đăng nhập
+                </button>
+                <button type="button" class="btn btn--ghost" style="flex:1" data-tab="register">
+                    Đăng ký
+                </button>
+            </div>
+
+            <form data-auth-form>
+                <div class="field" data-name-field hidden>
+                    <label class="field__label" for="auth-name">Tên hiển thị</label>
+                    <input class="input" id="auth-name" name="fullName" autocomplete="name"
+                           maxlength="80">
+                </div>
+                <div class="field">
+                    <label class="field__label" for="auth-email">Email</label>
+                    <input class="input" type="email" id="auth-email" name="email" required
+                           autocomplete="email" maxlength="255">
+                </div>
+                <div class="field">
+                    <label class="field__label" for="auth-password">Mật khẩu</label>
+                    <input class="input" type="password" id="auth-password" name="password" required
+                           autocomplete="current-password" minlength="6" maxlength="100">
+                </div>
+                <button type="submit" class="btn btn--primary btn--block btn--lg" data-submit>
+                    Đăng nhập
+                </button>
+            </form>
+
+            <!-- Google Sign-In: chỉ hiện khi app.google.client-id đã cấu hình -->
+            <div th:if="${googleEnabled}" style="margin-top: var(--sp-5)">
+                <div style="display:flex; align-items:center; gap:var(--sp-2);
+                            color:var(--text-low); font-size:var(--fs-xs); margin-bottom:var(--sp-3)">
+                    <span style="flex:1; height:1px; background:var(--border)"></span>
+                    <span>hoặc tiếp tục với</span>
+                    <span style="flex:1; height:1px; background:var(--border)"></span>
+                </div>
+                <div id="googleBtnContainer" style="display:flex; justify-content:center"></div>
+            </div>
+
+            <!-- Đăng nhập nhanh 2 tài khoản demo: khỏi nhập tay khi test 2 tab -->
+            <div th:if="${demoLoginEnabled}" data-quick-login
+                 th:attr="data-demo-password=${demoPassword}"
+                 style="margin-top: var(--sp-5)">
+                <div style="display:flex; align-items:center; gap:var(--sp-2);
+                            color:var(--text-low); font-size:var(--fs-xs); margin-bottom:var(--sp-3)">
+                    <span style="flex:1; height:1px; background:var(--border)"></span>
+                    <span>đăng nhập nhanh (demo)</span>
+                    <span style="flex:1; height:1px; background:var(--border)"></span>
+                </div>
+                <div style="display:flex; gap:var(--sp-2)">
+                    <button type="button" class="btn btn--ghost" style="flex:1"
+                            data-quick-user="demo1@jlas.local">demo1</button>
+                    <button type="button" class="btn btn--ghost" style="flex:1"
+                            data-quick-user="demo2@jlas.local">demo2</button>
+                </div>
+            </div>
+
+            <p style="margin: var(--sp-5) 0 0; font-size:var(--fs-xs); color:var(--text-low)">
+                Tài khoản demo: <code>demo1@jlas.local</code> / <code>demo2@jlas.local</code>
+                — mật khẩu <code>demo1234</code>
+                (đổi bằng biến môi trường <code>JLAS_GAME_DEMO_PASSWORD</code>).
+            </p>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/layout :: toast}"></div>
+<script th:src="@{/arena/js/toast.js}"></script>
+<script th:src="@{/arena/js/api-client.js}"></script>
+<script th:if="${googleEnabled}" src="https://accounts.google.com/gsi/client" async defer></script>
+<script th:src="@{/arena/js/auth-page.js}"></script>
+</body>
+</html>

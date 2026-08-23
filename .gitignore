@@ -1,0 +1,38 @@
+# Java / Maven
+target/
+*.class
+*.jar
+
+# Frontend dependencies and caches
+**/node_modules/
+**/.vite/
+**/dist/
+
+# Runtime output (may contain access tokens)
+*.log
+*.pid
+logs/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+application-local.properties
+application-*.local.properties
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+*.tmp
+*.swp
+
+# Redundant Stitch export archives/copies (keep sample, bosung, v2 and v3 sources)
+mẫu/*.zip
+mẫu/stitch_snowball_cats_game_arena_ui (1)/
+mẫu/sample/stitch_snowball_cats_game_arena_ui/

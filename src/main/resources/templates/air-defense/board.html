@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Air Defense · J-LAS Arena</title>
+    <link rel="stylesheet" th:href="@{/arena/css/tokens.css}">
+    <link rel="stylesheet" th:href="@{/arena/css/base.css}">
+    <link rel="stylesheet" th:href="@{/arena/app/air-defense/air-defense-app.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav('games')}"></nav>
+
+<div id="air-defense-root" th:attr="data-session-id=${sessionId}">
+    <main class="air-loading" aria-live="polite"><p>Đang kết nối đài chỉ huy…</p></main>
+</div>
+
+<div th:replace="~{fragments/layout :: toast}"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
+<script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
+<script type="module" th:src="@{/arena/app/air-defense/air-defense-app.js}"></script>
+</body>
+</html>

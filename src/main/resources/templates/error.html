@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Không thể mở trang · J-LAS Arena</title>
+    <link rel="stylesheet" th:href="@{/arena/css/tokens.css}">
+    <link rel="stylesheet" th:href="@{/arena/css/base.css}">
+    <style>
+        .error-page {
+            display: grid;
+            min-height: 100vh;
+            place-items: center;
+            padding: var(--sp-5);
+            background:
+                radial-gradient(circle at 25% 20%, var(--sakura-glow), transparent 24rem),
+                radial-gradient(circle at 80% 70%, var(--cyan-glow), transparent 26rem),
+                var(--bg-base);
+        }
+        .error-card {
+            width: min(560px, 100%);
+            padding: clamp(28px, 6vw, 52px);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--r-xl);
+            background: var(--surface-glass);
+            color: var(--text-hi);
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(18px);
+        }
+        .error-card__code {
+            display: block;
+            margin-bottom: var(--sp-3);
+            color: var(--sakura-300);
+            font: 800 var(--fs-sm)/1 var(--font-mono);
+            letter-spacing: .16em;
+        }
+        .error-card h1 { margin: 0 0 var(--sp-3); font-size: clamp(1.8rem, 6vw, 3rem); }
+        .error-card p { margin: 0 auto var(--sp-5); color: var(--text-mid); line-height: 1.65; }
+        .error-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-3); }
+    </style>
+</head>
+<body>
+<main class="error-page">
+    <section class="error-card">
+        <span class="error-card__code"
+              th:text="${status != null and status != 999 ? 'ERROR ' + status : 'J-LAS ARENA'}">J-LAS ARENA</span>
+        <h1>Không thể mở trang này</h1>
+        <p th:text="${status == 404} ? 'Đường dẫn không tồn tại hoặc đã được thay đổi.' :
+                    'Phiên truy cập hoặc dịch vụ vừa gặp sự cố. Hãy quay về sảnh và thử lại.'">
+            Phiên truy cập hoặc dịch vụ vừa gặp sự cố. Hãy quay về sảnh và thử lại.
+        </p>
+        <div class="error-card__actions">
+            <a class="btn btn--primary" th:href="@{/games}">Về sảnh game</a>
+            <button class="btn btn--ghost" type="button" onclick="window.location.reload()">Thử lại</button>
+        </div>
+    </section>
+</main>
+</body>
+</html>

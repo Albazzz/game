@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Game Arena · J-LAS</title>
+    <link rel="stylesheet" th:href="@{/arena/css/tokens.css}">
+    <link rel="stylesheet" th:href="@{/arena/css/base.css}">
+    <link rel="stylesheet" th:href="@{/arena/css/games.css}">
+</head>
+<body class="games-page">
+<nav th:replace="~{fragments/layout :: nav('games')}"></nav>
+
+<main class="games-shell">
+    <section class="games-hero" aria-labelledby="games-hero-title">
+        <div class="games-hero__snow" aria-hidden="true"></div>
+        <div class="games-hero__content">
+            <div class="games-hero__stats" aria-label="Thống kê sảnh game">
+                <span><i class="is-online"></i><strong data-stat-online>—</strong> Online</span>
+                <span><i aria-hidden="true">▣</i><strong data-stat-rooms>—</strong> Rooms Open</span>
+                <span><i aria-hidden="true">♙</i><strong th:text="${#lists.size(games)}">3</strong> Modes Active</span>
+            </div>
+
+            <p class="games-hero__eyebrow">J-LAS Snowball Cats Arena</p>
+            <h1 id="games-hero-title">Học tiếng Nhật<br>bằng đối kháng</h1>
+            <p class="games-hero__lead">
+                Chọn chế độ, mời bạn bè và luyện Kanji – từ vựng trong các trận đấu
+                thời gian thực. Sẵn sàng tung cầu tuyết chưa?
+            </p>
+
+            <div class="games-hero__actions">
+                <button type="button" class="snow-btn snow-btn--warm" data-quick-play>
+                    <span aria-hidden="true">▶</span> Chơi nhanh
+                </button>
+                <a class="snow-btn snow-btn--ice" th:href="@{/games/lobby}">
+                    <span aria-hidden="true">＋</span> Tạo phòng
+                </a>
+            </div>
+
+            <form class="games-join" data-join-form>
+                <label class="sr-only" for="join-code">Mã phòng</label>
+                <span class="games-join__icon" aria-hidden="true">⚿</span>
+                <input id="join-code" name="roomCode" maxlength="9"
+                       placeholder="NHẬP MÃ PHÒNG (VD: ABC-123)" autocomplete="off"
+                       aria-describedby="join-hint">
+                <button type="submit">Vào phòng</button>
+            </form>
+            <p id="join-hint" class="sr-only">Nhập mã phòng gồm chữ và số để vào phòng riêng</p>
+        </div>
+        <div class="games-hero__seal jp" aria-hidden="true">戦</div>
+    </section>
+
+    <section class="games-catalog" aria-labelledby="games-catalog-title">
+        <header class="games-section-head">
+            <div>
+                <span class="games-section-head__mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+                <div>
+                    <p>CHỌN ĐẤU TRƯỜNG</p>
+                    <h2 id="games-catalog-title">Chế độ chơi</h2>
+                </div>
+            </div>
+            <span class="games-section-head__count"><strong th:text="${#lists.size(games)}">3</strong> chế độ</span>
+        </header>
+
+        <div class="game-grid">
+            <article th:each="game : ${games}" class="game-card"
+                     th:classappend="|${game.gameType.name() == 'CANNON_BATTLE' ? 'game-card--cannon' :
+                                        (game.gameType.name() == 'CARD_DUEL' ? 'game-card--card' : 'game-card--memory')}
+                                      ${game.implemented} ? '' : 'game-card--soon'|">
+                <div class="game-card__visual">
+                    <img th:if="${game.gameType.name() == 'CANNON_BATTLE'}"
+                         th:src="@{/arena/images/games/snowball-duel.png}"
+                         alt="Chiến trường Snowball Duel">
+                    <img th:if="${game.gameType.name() != 'CANNON_BATTLE' and game.gameType.name() != 'CARD_DUEL'}"
+                         th:src="@{/arena/images/games/memory-match.png}"
+                         alt="Bàn chơi Memory Match">
+                    <div class="game-card__card-art jp" th:if="${game.gameType.name() == 'CARD_DUEL'}" aria-hidden="true">
+                        <span>文</span><span>法</span><span>戦</span>
+                    </div>
+                    <span class="game-card__status"
+                          th:classappend="${game.gameType.name() == 'CANNON_BATTLE'} ? ' is-hot' : (${game.implemented} ? ' is-new' : ' is-soon')"
+                          th:text="${game.gameType.name() == 'CANNON_BATTLE'} ? 'HOT' : (${game.implemented} ? 'NEW' : 'SẮP RA MẮT')">HOT</span>
+                    <div class="game-card__soon-label" th:unless="${game.implemented}">SẮP RA MẮT</div>
+                </div>
+
+                <div class="game-card__body">
+                    <div class="game-card__heading">
+                        <div>
+                            <p class="game-card__tagline" th:text="${game.tagline}">Từ vựng mùa đông</p>
+                            <h3 th:text="${game.displayName}">Snowball Duel</h3>
+                        </div>
+                        <span class="game-card__mode" th:text="${game.modeLabel}">1V1</span>
+                    </div>
+                    <p class="game-card__desc" th:text="${game.description}">Mô tả trò chơi</p>
+                    <div class="game-card__meta">
+                        <span th:text="${game.soloSupported} ? 'Solo · ' + ${game.minPlayers} + '–' + ${game.maxPlayers} + ' người' : ${game.minPlayers} + '–' + ${game.maxPlayers} + ' người'">Solo</span>
+                        <span th:text="${game.difficultyTag}">Dễ chơi</span>
+                        <span th:if="${game.teamBased}">Theo đội</span>
+                    </div>
+                </div>
+
+                <div class="game-card__actions" th:if="${game.implemented}">
+                    <button type="button" class="snow-btn snow-btn--primary"
+                            th:if="${game.soloSupported}"
+                            th:attr="data-solo-game=${game.gameType.name()}">
+                        <span aria-hidden="true">♙</span> Chơi solo
+                    </button>
+                    <button type="button" class="snow-btn snow-btn--soft"
+                            th:attr="data-create-room=${game.gameType.name()}">
+                        Tạo phòng
+                    </button>
+                    <a class="game-card__lobby" th:href="@{/games/lobby(gameType=${game.gameType.name()})}">
+                        Xem lobby chi tiết <span aria-hidden="true">→</span>
+                    </a>
+                </div>
+                <div class="game-card__locked" th:unless="${game.implemented}" aria-label="Chế độ đang phát triển">
+                    <span></span><span></span><i></i>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+
+<footer class="games-footer">
+    <div>
+        <span class="games-footer__mark jp" aria-hidden="true">雪</span>
+        <div><strong>J-LAS Snowball Cats Arena</strong><small>Winter Gaming Championship</small></div>
+    </div>
+    <p>Học vui · Đấu lành mạnh · Tiến bộ mỗi ngày</p>
+</footer>
+
+<div class="arena-modal is-hidden" data-air-solo-modal role="dialog" aria-modal="true"
+     aria-labelledby="air-solo-title">
+    <div class="arena-modal__card">
+        <div class="panel__head">
+            <div>
+                <span class="tag tag--cyan">Solo · Unranked</span>
+                <h2 class="panel__title" id="air-solo-title">Nhiệm vụ Snowball Duel</h2>
+            </div>
+            <button type="button" class="btn btn--ghost" data-air-solo-close aria-label="Đóng">×</button>
+        </div>
+        <form class="panel__body" data-air-solo-form>
+            <div class="field">
+                <label class="field__label" for="air-solo-objective">Nhiệm vụ</label>
+                <select class="select" id="air-solo-objective" name="objective">
+                    <option value="PRACTICE">Practice · hoàn thành bộ câu hỏi</option>
+                    <option value="SURVIVAL">Survival · giữ vững phòng tuyến</option>
+                    <option value="SCORE_CHALLENGE">Score Challenge · đạt mục tiêu trước giờ</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="field__label" for="air-solo-difficulty">Độ khó</label>
+                <select class="select" id="air-solo-difficulty" name="difficulty">
+                    <option value="EASY">Dễ · 18 giây</option>
+                    <option value="NORMAL" selected>Thường · 14 giây</option>
+                    <option value="HARD">Khó · 10 giây</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="field__label" for="air-solo-mode">Kiểu câu hỏi</label>
+                <select class="select" id="air-solo-mode" name="answerMode">
+                    <option value="KANJI_TO_HIRAGANA">Kanji → Hiragana</option>
+                    <option value="KANJI_TO_MEANING">Kanji → Nghĩa</option>
+                </select>
+            </div>
+            <div class="arena-modal__grid">
+                <div class="field">
+                    <label class="field__label" for="air-solo-level">JLPT</label>
+                    <select class="select" id="air-solo-level" name="questionLevel">
+                        <option value="N5">N5</option>
+                        <option value="N4">N4</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="field__label" for="air-solo-count">Số mục tiêu</label>
+                    <input class="input" id="air-solo-count" name="questionCount" type="number"
+                           value="10" min="5" max="60">
+                </div>
+            </div>
+            <button class="snow-btn snow-btn--primary snow-btn--block" type="submit">Bắt đầu nhiệm vụ</button>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: toast}"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/arena/js/games-page.js}"></script>
+</body>
+</html>

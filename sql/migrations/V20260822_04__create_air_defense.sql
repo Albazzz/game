@@ -1,0 +1,33 @@
+-- Phase 3: kết quả Air Defense/Cannon Battle. Câu hỏi dùng lại game_vocabulary.
+CREATE TABLE IF NOT EXISTS air_defense_result (
+    result_id           BIGINT      NOT NULL AUTO_INCREMENT,
+    session_id          VARCHAR(64) NOT NULL,
+    match_id            BIGINT      NULL,
+    room_id             VARCHAR(64) NULL,
+    user_id             BIGINT      NOT NULL,
+    play_mode           VARCHAR(16) NOT NULL,
+    objective           VARCHAR(24) NOT NULL,
+    difficulty          VARCHAR(16) NOT NULL,
+    answer_mode         VARCHAR(32) NOT NULL,
+    jlpt_level          VARCHAR(10) NOT NULL,
+    outcome             VARCHAR(24) NOT NULL,
+    hp_remaining        INT         NOT NULL,
+    score               INT         NOT NULL DEFAULT 0,
+    questions_answered  INT         NOT NULL DEFAULT 0,
+    correct_answers     INT         NOT NULL DEFAULT 0,
+    incorrect_answers   INT         NOT NULL DEFAULT 0,
+    accuracy_percent    INT         NOT NULL DEFAULT 0,
+    best_combo          INT         NOT NULL DEFAULT 0,
+    average_response_ms INT         NULL,
+    duration_ms         BIGINT      NOT NULL DEFAULT 0,
+    ranked              TINYINT(1)  NOT NULL DEFAULT 0,
+    winner              TINYINT(1)  NOT NULL DEFAULT 0,
+    finished_at         DATETIME(6) NOT NULL,
+    PRIMARY KEY (result_id),
+    UNIQUE KEY uk_air_result_session_user (session_id, user_id),
+    KEY idx_air_result_user (user_id),
+    KEY idx_air_result_session (session_id),
+    KEY idx_air_result_finished (finished_at),
+    CONSTRAINT fk_air_result_match FOREIGN KEY (match_id)
+        REFERENCES game_match (match_id) ON DELETE SET NULL
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

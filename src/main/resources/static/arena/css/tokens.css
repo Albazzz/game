@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Design tokens — modern Japanese arcade, dark navy + sakura.
+   Chỉ định nghĩa màu ở file này; các file khác chỉ dùng var().
+   ========================================================================== */
+:root {
+    /* Surfaces */
+    --bg-base: #070912;
+    --bg-deep: #0b0f1d;
+    --surface-1: #111629;
+    --surface-2: #171d34;
+    --surface-3: #1f2742;
+    --surface-glass: rgba(23, 29, 52, 0.62);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+
+    /* Accents */
+    --sakura-500: #ff5d9e;
+    --sakura-400: #ff7cb2;
+    --sakura-300: #ffa8cd;
+    --sakura-glow: rgba(255, 93, 158, 0.35);
+    --cyan-400: #4fd1ff;
+    --cyan-glow: rgba(79, 209, 255, 0.28);
+    --gold-400: #ffc860;
+
+    /* Semantic */
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --info: var(--cyan-400);
+
+    /* Text */
+    --text-hi: #f4f6ff;
+    --text-mid: #b7bed6;
+    --text-low: #7c85a3;
+
+    /* Typography */
+    --font-sans: "Segoe UI", "Noto Sans JP", system-ui, -apple-system, sans-serif;
+    --font-jp: "Noto Sans JP", "Yu Gothic", "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.875rem;
+    --fs-md: 1rem;
+    --fs-lg: 1.125rem;
+    --fs-xl: 1.375rem;
+    --fs-2xl: 1.75rem;
+    --fs-3xl: 2.5rem;
+    --fs-4xl: 3.25rem;
+
+    /* Radius — nhất quán, không trộn nhiều giá trị lạ */
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --r-pill: 999px;
+
+    /* Spacing */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --sp-7: 48px;
+    --sp-8: 64px;
+
+    /* Elevation */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.32);
+    --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.42);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.52);
+    --shadow-sakura: 0 0 0 1px var(--sakura-glow), 0 8px 32px var(--sakura-glow);
+
+    /* Motion */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --dur-fast: 140ms;
+    --dur-base: 220ms;
+    --dur-slow: 380ms;
+    --dur-cinematic: 700ms;
+
+    --z-nav: 100;
+    --z-drawer: 200;
+    --z-modal: 300;
+    --z-toast: 400;
+    --z-overlay: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --dur-fast: 1ms;
+        --dur-base: 1ms;
+        --dur-slow: 1ms;
+        --dur-cinematic: 1ms;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+    }
+}

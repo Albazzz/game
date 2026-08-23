@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title th:text="${title} ?: 'J-LAS Game Arena'">J-LAS Game Arena</title>
+    <link rel="stylesheet" th:href="@{/arena/css/tokens.css}">
+    <link rel="stylesheet" th:href="@{/arena/css/base.css}">
+</head>
+<body>
+
+<!-- Nav dùng chung -->
+<nav class="arena-nav" th:fragment="nav(active)">
+    <a class="arena-nav__brand" th:href="@{/games}">
+        <span class="arena-nav__mark jp" aria-hidden="true">闘</span>
+        <span>J-LAS <strong>Arena</strong></span>
+    </a>
+    <div class="arena-nav__links">
+        <a th:href="@{/games}" th:classappend="${active == 'games'} ? 'is-active'">Sảnh game</a>
+        <a th:href="@{/games/lobby}" th:classappend="${active == 'lobby'} ? 'is-active'">Lobby</a>
+    </div>
+    <div class="arena-nav__spacer"></div>
+    <div class="arena-nav__user" data-arena-user>
+        <span class="arena-nav__user-name" data-arena-user-name>Đang tải…</span>
+        <span class="avatar" data-arena-user-avatar aria-hidden="true">?</span>
+        <button type="button" class="btn btn--ghost" data-arena-logout>Đăng xuất</button>
+    </div>
+</nav>
+
+<!-- Toast container -->
+<div th:fragment="toast" class="toast-stack" role="status" aria-live="polite"></div>
+
+<!-- Script dùng chung -->
+<th:block th:fragment="scripts">
+    <script th:src="@{/arena/js/toast.js}"></script>
+    <script th:src="@{/arena/js/api-client.js}"></script>
+    <script th:src="@{/arena/js/nav.js}"></script>
+</th:block>
+
+</body>
+</html>

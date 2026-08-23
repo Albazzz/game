@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head th:replace="~{fragments/layout :: head('Lobby · Game Arena')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav('lobby')}"></nav>
+
+<main class="shell">
+    <div class="section-head" style="margin-top: var(--sp-6)">
+        <h2>Lobby</h2>
+        <p>Tạo phòng mới hoặc tham gia phòng công khai đang chờ người</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 380px 1fr; gap: var(--sp-5); align-items:start;"
+         data-lobby-grid>
+        <!-- Tạo phòng -->
+        <section class="panel">
+            <div class="panel__head">
+                <h3 class="panel__title">Tạo phòng</h3>
+            </div>
+            <div class="panel__body">
+                <form data-create-form>
+                    <div class="field">
+                        <label class="field__label" for="lobby-game">Chế độ</label>
+                        <select class="select" id="lobby-game" name="gameType"></select>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="lobby-visibility">Hiển thị</label>
+                        <select class="select" id="lobby-visibility" name="visibility">
+                            <option value="PRIVATE">Riêng tư (dùng mã phòng)</option>
+                            <option value="PUBLIC">Công khai (hiện ở lobby)</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="lobby-level">Cấp độ câu hỏi</label>
+                        <select class="select" id="lobby-level" name="questionLevel">
+                            <option value="N5">N5</option>
+                            <option value="N4">N4</option>
+                            <option value="N3">N3</option>
+                            <option value="N2">N2</option>
+                            <option value="N1">N1</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--block btn--lg">
+                        Tạo phòng
+                    </button>
+                </form>
+
+                <hr style="border:none; border-top:1px solid var(--border-subtle); margin: var(--sp-5) 0;">
+
+                <form data-join-form>
+                    <div class="field">
+                        <label class="field__label" for="lobby-code">Vào bằng mã phòng</label>
+                        <input class="input input--code" id="lobby-code" name="roomCode"
+                               maxlength="9" placeholder="AB-CD12" autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn--block">Vào phòng</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Danh sách phòng public -->
+        <section class="panel">
+            <div class="panel__head">
+                <h3 class="panel__title">Phòng công khai</h3>
+                <button type="button" class="btn btn--ghost" data-refresh-rooms>Làm mới</button>
+            </div>
+            <div class="panel__body" data-room-list>
+                <div class="state">
+                    <div class="spinner" aria-hidden="true"></div>
+                    <p>Đang tải danh sách phòng…</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: toast}"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/arena/js/lobby-page.js}"></script>
+</body>
+</html>
