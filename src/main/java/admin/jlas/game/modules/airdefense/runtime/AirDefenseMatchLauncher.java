@@ -1,6 +1,6 @@
 package admin.jlas.game.modules.airdefense.runtime;
 
-import admin.jlas.game.modules.airdefense.service.AirDefenseMatchService;
+import admin.jlas.game.modules.airdefense.service.AirDefenseService;
 import admin.jlas.game.modules.arena.domain.GameRoom;
 import admin.jlas.game.modules.arena.domain.GameType;
 import admin.jlas.game.modules.arena.domain.RoomPlayer;
@@ -13,10 +13,10 @@ import java.util.List;
 @Component
 public class AirDefenseMatchLauncher implements GameSessionLauncher {
 
-    private final AirDefenseMatchService matchService;
+    private final AirDefenseService airDefenseService;
 
-    public AirDefenseMatchLauncher(AirDefenseMatchService matchService) {
-        this.matchService = matchService;
+    public AirDefenseMatchLauncher(AirDefenseService airDefenseService) {
+        this.airDefenseService = airDefenseService;
     }
 
     @Override
@@ -25,14 +25,14 @@ public class AirDefenseMatchLauncher implements GameSessionLauncher {
     }
 
     @Override
-    public String launch(GameRoom room, RoomStateView snapshot, List<RoomPlayer> players,
-                         Long matchId) {
-        return matchService.createForRoom(room.getRoomId(), matchId,
-                room.getSettings(), players).getSessionId();
+    public String launch(GameRoom room, RoomStateView snapshot, List<RoomPlayer> players, Long matchId) {
+        return airDefenseService
+                .createForRoom(room.getRoomId(), matchId, room.getSettings(), players)
+                .getSessionId();
     }
 
     @Override
     public void abortByRoom(String roomId) {
-        matchService.abortByRoom(roomId);
+        airDefenseService.abortByRoom(roomId);
     }
 }

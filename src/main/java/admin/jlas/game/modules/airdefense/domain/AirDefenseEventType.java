@@ -1,0 +1,18 @@
+package admin.jlas.game.modules.airdefense.domain;
+
+public enum AirDefenseEventType {
+    SESSION_STATE,
+    TARGET_SPAWNED,
+    TARGET_HIT,
+    TARGET_DESTROYED,
+    PLAYER_DAMAGED,
+    AUGMENT_DRAFT_TRIGGERED,
+    AUGMENT_SELECTED,
+    AUGMENT_REROLLED,
+    HYPER_BEAM_FIRED,
+    DISRUPTION_ATTACK,
+    SESSION_PAUSED,
+    SESSION_RESUMED,
+    SESSION_FINISHED,
+    ERROR
+}

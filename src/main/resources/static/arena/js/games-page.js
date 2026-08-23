@@ -4,7 +4,6 @@
 
     var STATS_INTERVAL_MS = 10000;
     var statsTimer = null;
-    var airSoloButton = null;
 
     function loadStats() {
         return global.ArenaApi.lobbyStats().then(function (stats) {
@@ -37,7 +36,7 @@
 
     function createSolo(gameType, button) {
         if (gameType === 'CANNON_BATTLE') {
-            openAirSolo(button);
+            global.location.href = '/games/air-defense';
             return;
         }
         button.disabled = true;
@@ -49,90 +48,6 @@
                 button.disabled = false;
                 global.ArenaToast.error(err.message);
             });
-    }
-
-    function openAirSolo(button) {
-        var modal = document.querySelector('[data-air-solo-modal]');
-        if (!modal) {
-            return;
-        }
-        airSoloButton = button;
-        modal.classList.remove('is-hidden');
-        var first = modal.querySelector('select, input, button');
-        if (first) {
-            first.focus();
-        }
-    }
-
-    function closeAirSolo() {
-        var modal = document.querySelector('[data-air-solo-modal]');
-        if (modal) {
-            modal.classList.add('is-hidden');
-        }
-        if (airSoloButton) {
-            airSoloButton.focus();
-        }
-        airSoloButton = null;
-    }
-
-    function bindAirSolo() {
-        var modal = document.querySelector('[data-air-solo-modal]');
-        var form = document.querySelector('[data-air-solo-form]');
-        if (!modal || !form) {
-            return;
-        }
-        modal.querySelector('[data-air-solo-close]').addEventListener('click', closeAirSolo);
-        modal.addEventListener('click', function (event) {
-            if (event.target === modal) {
-                closeAirSolo();
-            }
-        });
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && !modal.classList.contains('is-hidden')) {
-                closeAirSolo();
-            } else if (event.key === 'Tab' && !modal.classList.contains('is-hidden')) {
-                var focusable = Array.prototype.slice.call(modal.querySelectorAll(
-                    'button:not([disabled]), select:not([disabled]), input:not([disabled])'));
-                if (!focusable.length) {
-                    return;
-                }
-                var first = focusable[0];
-                var last = focusable[focusable.length - 1];
-                if (event.shiftKey && document.activeElement === first) {
-                    event.preventDefault();
-                    last.focus();
-                } else if (!event.shiftKey && document.activeElement === last) {
-                    event.preventDefault();
-                    first.focus();
-                }
-            }
-        });
-        form.addEventListener('submit', function (event) {
-            event.preventDefault();
-            var submit = form.querySelector('button[type="submit"]');
-            submit.disabled = true;
-            var difficulty = form.elements.difficulty.value;
-            var travelSeconds = difficulty === 'EASY' ? 18 : (difficulty === 'HARD' ? 10 : 14);
-            var settings = {
-                questionLevel: form.elements.questionLevel.value,
-                answerMode: form.elements.answerMode.value,
-                questionCount: parseInt(form.elements.questionCount.value, 10) || 10,
-                secondsPerQuestion: travelSeconds,
-                extra: {
-                    objective: form.elements.objective.value,
-                    difficulty: difficulty,
-                    maxHp: 3,
-                    targetScore: 10,
-                    durationSeconds: 120
-                }
-            };
-            global.ArenaApi.createAirDefenseSolo(settings).then(function (state) {
-                global.location.href = '/games/air-defense/' + encodeURIComponent(state.sessionId);
-            }).catch(function (err) {
-                submit.disabled = false;
-                global.ArenaToast.error(err.message);
-            });
-        });
     }
 
     function bind() {
@@ -173,7 +88,6 @@
         var quickPlay = document.querySelector('[data-quick-play]');
         if (quickPlay) {
             quickPlay.addEventListener('click', function () {
-                // Chưa có matchmaking: vào phòng public đang chờ, nếu không có thì mở lobby.
                 quickPlay.disabled = true;
                 global.ArenaApi.lobbyRooms().then(function (rooms) {
                     var open = rooms.filter(function (room) {
@@ -195,12 +109,10 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         bind();
-        bindAirSolo();
         loadStats();
         statsTimer = global.setInterval(loadStats, STATS_INTERVAL_MS);
     });
 
-    // Dọn timer khi rời trang để không leak.
     global.addEventListener('beforeunload', function () {
         if (statsTimer) {
             global.clearInterval(statsTimer);

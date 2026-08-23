@@ -1,0 +1,10 @@
+{
+  "description": "Generates comprehensive design documentation and screen covers for all game interfaces, streamlining game design review and collaboration.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

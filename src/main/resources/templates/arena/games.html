@@ -69,8 +69,8 @@
                                       ${game.implemented} ? '' : 'game-card--soon'|">
                 <div class="game-card__visual">
                     <img th:if="${game.gameType.name() == 'CANNON_BATTLE'}"
-                         th:src="@{/arena/images/games/snowball-duel.png}"
-                         alt="Chiến trường Snowball Duel">
+                         th:src="@{/assets/space/BG.png}"
+                         alt="Chiến trường Air Defence Sci-Fi">
                     <img th:if="${game.gameType.name() != 'CANNON_BATTLE' and game.gameType.name() != 'CARD_DUEL'}"
                          th:src="@{/arena/images/games/memory-match.png}"
                          alt="Bàn chơi Memory Match">
@@ -86,20 +86,28 @@
                 <div class="game-card__body">
                     <div class="game-card__heading">
                         <div>
-                            <p class="game-card__tagline" th:text="${game.tagline}">Từ vựng mùa đông</p>
-                            <h3 th:text="${game.displayName}">Snowball Duel</h3>
+                            <p class="game-card__tagline" th:text="${game.tagline}">Deep Space Sci-Fi</p>
+                            <h3 th:text="${game.displayName}">Air Defence</h3>
                         </div>
                         <span class="game-card__mode" th:text="${game.modeLabel}">1V1</span>
                     </div>
                     <p class="game-card__desc" th:text="${game.description}">Mô tả trò chơi</p>
                     <div class="game-card__meta">
                         <span th:text="${game.soloSupported} ? 'Solo · ' + ${game.minPlayers} + '–' + ${game.maxPlayers} + ' người' : ${game.minPlayers} + '–' + ${game.maxPlayers} + ' người'">Solo</span>
-                        <span th:text="${game.difficultyTag}">Dễ chơi</span>
+                        <span th:text="${game.difficultyTag}">Sci-Fi</span>
                         <span th:if="${game.teamBased}">Theo đội</span>
                     </div>
                 </div>
 
-                <div class="game-card__actions" th:if="${game.implemented}">
+                <!-- Air Defence: Chỉ có duy nhất 1 nút trực tiếp vào game, không qua lobby hay modal -->
+                <div class="game-card__actions" th:if="${game.implemented and game.gameType.name() == 'CANNON_BATTLE'}">
+                    <a class="snow-btn snow-btn--warm snow-btn--block" th:href="@{/games/air-defense}">
+                        <span aria-hidden="true">🚀</span> VÀO TRANG AIR DEFENCE →
+                    </a>
+                </div>
+
+                <!-- Các game khác: Giữ cơ chế tạo phòng / chơi solo của Arena -->
+                <div class="game-card__actions" th:if="${game.implemented and game.gameType.name() != 'CANNON_BATTLE'}">
                     <button type="button" class="snow-btn snow-btn--primary"
                             th:if="${game.soloSupported}"
                             th:attr="data-solo-game=${game.gameType.name()}">
@@ -128,59 +136,6 @@
     </div>
     <p>Học vui · Đấu lành mạnh · Tiến bộ mỗi ngày</p>
 </footer>
-
-<div class="arena-modal is-hidden" data-air-solo-modal role="dialog" aria-modal="true"
-     aria-labelledby="air-solo-title">
-    <div class="arena-modal__card">
-        <div class="panel__head">
-            <div>
-                <span class="tag tag--cyan">Solo · Unranked</span>
-                <h2 class="panel__title" id="air-solo-title">Nhiệm vụ Snowball Duel</h2>
-            </div>
-            <button type="button" class="btn btn--ghost" data-air-solo-close aria-label="Đóng">×</button>
-        </div>
-        <form class="panel__body" data-air-solo-form>
-            <div class="field">
-                <label class="field__label" for="air-solo-objective">Nhiệm vụ</label>
-                <select class="select" id="air-solo-objective" name="objective">
-                    <option value="PRACTICE">Practice · hoàn thành bộ câu hỏi</option>
-                    <option value="SURVIVAL">Survival · giữ vững phòng tuyến</option>
-                    <option value="SCORE_CHALLENGE">Score Challenge · đạt mục tiêu trước giờ</option>
-                </select>
-            </div>
-            <div class="field">
-                <label class="field__label" for="air-solo-difficulty">Độ khó</label>
-                <select class="select" id="air-solo-difficulty" name="difficulty">
-                    <option value="EASY">Dễ · 18 giây</option>
-                    <option value="NORMAL" selected>Thường · 14 giây</option>
-                    <option value="HARD">Khó · 10 giây</option>
-                </select>
-            </div>
-            <div class="field">
-                <label class="field__label" for="air-solo-mode">Kiểu câu hỏi</label>
-                <select class="select" id="air-solo-mode" name="answerMode">
-                    <option value="KANJI_TO_HIRAGANA">Kanji → Hiragana</option>
-                    <option value="KANJI_TO_MEANING">Kanji → Nghĩa</option>
-                </select>
-            </div>
-            <div class="arena-modal__grid">
-                <div class="field">
-                    <label class="field__label" for="air-solo-level">JLPT</label>
-                    <select class="select" id="air-solo-level" name="questionLevel">
-                        <option value="N5">N5</option>
-                        <option value="N4">N4</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label class="field__label" for="air-solo-count">Số mục tiêu</label>
-                    <input class="input" id="air-solo-count" name="questionCount" type="number"
-                           value="10" min="5" max="60">
-                </div>
-            </div>
-            <button class="snow-btn snow-btn--primary snow-btn--block" type="submit">Bắt đầu nhiệm vụ</button>
-        </form>
-    </div>
-</div>
 
 <div th:replace="~{fragments/layout :: toast}"></div>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>

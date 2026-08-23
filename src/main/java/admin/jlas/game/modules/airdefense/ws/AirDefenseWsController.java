@@ -1,9 +1,11 @@
 package admin.jlas.game.modules.airdefense.ws;
 
 import admin.jlas.game.common.exception.ApiException;
-import admin.jlas.game.modules.airdefense.dto.SubmitAirDefenseAnswerRequest;
+import admin.jlas.game.modules.airdefense.domain.AirDefenseEventType;
+import admin.jlas.game.modules.airdefense.dto.AirDefenseAnswerRequest;
+import admin.jlas.game.modules.airdefense.dto.SelectAugmentRequest;
 import admin.jlas.game.modules.airdefense.runtime.AirDefenseBroadcaster;
-import admin.jlas.game.modules.airdefense.service.AirDefenseMatchService;
+import admin.jlas.game.modules.airdefense.service.AirDefenseService;
 import admin.jlas.game.modules.arena.support.ArenaRateLimiter;
 import admin.jlas.game.modules.auth.security.UserPrincipal;
 import jakarta.validation.Valid;
@@ -21,55 +23,91 @@ import java.security.Principal;
 public class AirDefenseWsController {
 
     private static final Logger log = LoggerFactory.getLogger(AirDefenseWsController.class);
-    private final AirDefenseMatchService matchService;
+
+    private final AirDefenseService airDefenseService;
     private final ArenaRateLimiter rateLimiter;
     private final AirDefenseBroadcaster broadcaster;
 
-    public AirDefenseWsController(AirDefenseMatchService matchService,
+    public AirDefenseWsController(AirDefenseService airDefenseService,
                                   ArenaRateLimiter rateLimiter,
                                   AirDefenseBroadcaster broadcaster) {
-        this.matchService = matchService;
+        this.airDefenseService = airDefenseService;
         this.rateLimiter = rateLimiter;
         this.broadcaster = broadcaster;
     }
 
     @MessageMapping("/air-defense/{sessionId}/answer")
-    public void answer(@DestinationVariable String sessionId,
-                       @Payload @Valid SubmitAirDefenseAnswerRequest request,
-                       Principal principal) {
-        UserPrincipal user = resolve(principal);
-        if (user == null) return;
-        if (!rateLimiter.tryAcquire(user.getUserId(), "answer")) {
-            broadcaster.sendError(user.getUsername(), sessionId,
-                    "Bạn gửi đáp án quá nhanh, thử lại sau");
-            return;
-        }
-        try {
-            matchService.submitAnswer(user, sessionId, request.aircraftId(),
-                    request.answer(), request.commandId());
-        } catch (ApiException ex) {
-            broadcaster.sendError(user.getUsername(), sessionId, ex.getMessage());
-        } catch (Exception ex) {
-            log.warn("Air Defense answer failed: {}", ex.getMessage());
-            broadcaster.sendError(user.getUsername(), sessionId,
-                    "Không thể xử lý đáp án");
-        }
+    public void submitAnswer(@DestinationVariable String sessionId,
+                             @Payload @Valid AirDefenseAnswerRequest request,
+                             Principal principal) {
+        handle(principal, sessionId, "answer",
+                user -> airDefenseService.processAnswer(user, sessionId, request));
+    }
+
+    @MessageMapping("/air-defense/{sessionId}/select-augment")
+    public void selectAugment(@DestinationVariable String sessionId,
+                              @Payload @Valid SelectAugmentRequest request,
+                              Principal principal) {
+        handle(principal, sessionId, "select-augment",
+                user -> airDefenseService.selectAugment(user, sessionId, request));
+    }
+
+    @MessageMapping("/air-defense/{sessionId}/hyper-beam")
+    public void fireHyperBeam(@DestinationVariable String sessionId, Principal principal) {
+        handle(principal, sessionId, "hyper-beam",
+                user -> airDefenseService.triggerHyperBeam(user, sessionId));
+    }
+
+    @MessageMapping("/air-defense/{sessionId}/planet-damage")
+    public void reportPlanetDamage(@DestinationVariable String sessionId,
+                                   @Payload java.util.Map<String, Integer> payload,
+                                   Principal principal) {
+        handle(principal, sessionId, "planet-damage",
+                user -> {
+                    int damage = payload.getOrDefault("damage", 15);
+                    airDefenseService.applyPlanetDamage(sessionId, user.getUserId(), damage);
+                });
     }
 
     @MessageMapping("/air-defense/{sessionId}/state")
-    public void state(@DestinationVariable String sessionId, Principal principal) {
+    public void requestState(@DestinationVariable String sessionId, Principal principal) {
         UserPrincipal user = resolve(principal);
         if (user == null) return;
         try {
-            matchService.sendState(user, sessionId);
+            broadcaster.sendToUser(user.getUsername(), sessionId,
+                    AirDefenseEventType.SESSION_STATE, airDefenseService.getState(user, sessionId));
         } catch (ApiException ex) {
             broadcaster.sendError(user.getUsername(), sessionId, ex.getMessage());
+        }
+    }
+
+    private interface Action {
+        void run(UserPrincipal user);
+    }
+
+    private void handle(Principal principal, String sessionId, String limitKey, Action action) {
+        UserPrincipal user = resolve(principal);
+        if (user == null) return;
+
+        if (!rateLimiter.tryAcquire(user.getUserId(), limitKey)) {
+            broadcaster.sendError(user.getUsername(), sessionId, "Thao tác quá nhanh, thử lại sau");
+            return;
+        }
+
+        try {
+            action.run(user);
+        } catch (ApiException ex) {
+            broadcaster.sendError(user.getUsername(), sessionId, ex.getMessage());
+        } catch (Exception ex) {
+            log.warn("Air Defense WS action {} failed: {}", limitKey, ex.getMessage());
+            broadcaster.sendError(user.getUsername(), sessionId, "Có lỗi xảy ra, vui lòng thử lại");
         }
     }
 
     private UserPrincipal resolve(Principal principal) {
-        if (principal instanceof Authentication auth
-                && auth.getPrincipal() instanceof UserPrincipal user) return user;
+        if (principal instanceof Authentication auth && auth.getPrincipal() instanceof UserPrincipal user) {
+            return user;
+        }
         return null;
     }
 }

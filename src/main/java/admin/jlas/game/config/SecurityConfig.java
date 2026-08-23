@@ -37,8 +37,6 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
-        // Constructor injection (không dùng setUserDetailsService đã deprecated) —
-        // giống SecurityConfig của app J-LAS.
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
@@ -53,18 +51,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Stateless JWT: không dùng session cookie nên CSRF token không áp dụng.
-                // Mọi state-changing request đều cần Bearer/JWT cookie do JS gắn vào.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Trang tĩnh + auth công khai
-                        // /error phải public: nếu không, error-dispatch bị redirect về login;
-                        // sau login trình duyệt quay lại /error và Boot chỉ còn status 999.
                         .requestMatchers("/", "/login", "/register", "/error").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/arena/**", "/webjars/**",
-                                "/favicon.ico", "/images/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/arena/**", "/assets/**", "/webjars/**",
+                                "/favicon.ico", "/images/**", "/robots.txt").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/register",
                                 "/api/auth/google").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
@@ -72,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/games/catalog").permitAll()
                         // WS handshake: xác thực ở tầng STOMP CONNECT interceptor
                         .requestMatchers("/ws-arena/**").permitAll()
-                        // Quản trị: chỉ ADMIN / SUPER_ADMIN (kiểm tra lần 2 bằng @PreAuthorize)
+                        // Quản trị: chỉ ADMIN / SUPER_ADMIN
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         // Còn lại bắt buộc đăng nhập
                         .requestMatchers("/games/**", "/api/**").authenticated()

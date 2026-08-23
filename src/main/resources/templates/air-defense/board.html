@@ -1,24 +1,28 @@
-<!DOCTYPE html>
+<!doctype html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Air Defense · J-LAS Arena</title>
-    <link rel="stylesheet" th:href="@{/arena/css/tokens.css}">
-    <link rel="stylesheet" th:href="@{/arena/css/base.css}">
-    <link rel="stylesheet" th:href="@{/arena/app/air-defense/air-defense-app.css}">
-</head>
-<body>
-<nav th:replace="~{fragments/layout :: nav('games')}"></nav>
-
-<div id="air-defense-root" th:attr="data-session-id=${sessionId}">
-    <main class="air-loading" aria-live="polite"><p>Đang kết nối đài chỉ huy…</p></main>
-</div>
-
-<div th:replace="~{fragments/layout :: toast}"></div>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-<script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
-<script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
-<script type="module" th:src="@{/arena/app/air-defense/air-defense-app.js}"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Air Defence · J-LAS Arena</title>
+    <meta name="description" content="Air Defence Tactical Space Arcade - Realtime Japanese Typing Shooter">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/favicon.ico">
+    <script type="module" crossorigin src="/assets/index-BtynEzd5.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/Geometry-coEMng49.js">
+    <link rel="modulepreload" crossorigin href="/assets/Filter-CxtE1b8B.js">
+    <link rel="modulepreload" crossorigin href="/assets/canvasUtils-BVPkC6ub.js">
+    <link rel="modulepreload" crossorigin href="/assets/Cache-DGqfkvRQ.js">
+    <link rel="modulepreload" crossorigin href="/assets/GCManagedHash-D9CG0G29.js">
+    <link rel="modulepreload" crossorigin href="/assets/RenderTargetSystem-BYP0rz3G.js">
+    <link rel="modulepreload" crossorigin href="/assets/getTextureBatchBindGroup-Bt6AC8uX.js">
+    <link rel="modulepreload" crossorigin href="/assets/GraphicsContext-HJedM6HG.js">
+    <link rel="modulepreload" crossorigin href="/assets/CanvasPool-ccaPBm8-.js">
+    <link rel="modulepreload" crossorigin href="/assets/BufferResource-C7oaW46i.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-BNFf_mQL.css">
+  </head>
+  <body class="bg-[#070a12] text-slate-100 overflow-hidden w-screen h-screen">
+    <div id="root" th:attr="data-session-id=${sessionId}"></div>
+  </body>
 </html>

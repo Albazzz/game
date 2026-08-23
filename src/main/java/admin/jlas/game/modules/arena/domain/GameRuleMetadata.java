@@ -31,11 +31,11 @@ public record GameRuleMetadata(
         Map<GameType, GameRuleMetadata> map = new LinkedHashMap<>();
         map.put(GameType.CANNON_BATTLE, new GameRuleMetadata(
                 GameType.CANNON_BATTLE,
-                "Air Defense",
-                "防空戦 · Solo / 1v1",
-                "Điều khiển pháo phòng không, trả lời tiếng Nhật để bắn hạ phi cơ trước khi chúng chạm tuyến phòng thủ.",
-                2, 2, true, true, true,
-                "Intense", "Solo / 1v1",
+                "Air Defence",
+                "Deep Space Sci-Fi · Tactical Roguelike",
+                "Khóa mục tiêu Laser tự động, gõ tiếng Nhật bắn nổ quái vật không gian, nâng cấp Talent Tree và trang bị phi thuyền hiện đại.",
+                1, 2, true, false, true,
+                "Sci-Fi", "Roguelike / 1v1",
                 EnumSet.of(AnswerMode.KANJI_TO_HIRAGANA, AnswerMode.KANJI_TO_MEANING),
                 AnswerMode.KANJI_TO_HIRAGANA));
         map.put(GameType.CARD_DUEL, new GameRuleMetadata(

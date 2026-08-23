@@ -1,162 +1,169 @@
 package admin.jlas.game.modules.airdefense.domain;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayDeque;
+import admin.jlas.game.modules.arena.domain.AnswerMode;
+import admin.jlas.game.modules.arena.domain.QuestionLevel;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-/** Mutable authoritative state; mọi mutate bắt buộc đi qua lock theo session. */
 public class AirDefenseSession {
 
-    private final ReentrantLock lock = new ReentrantLock();
-    private final String sessionId;
-    private final String roomId;
-    private final Long matchId;
-    private final AirDefensePlayMode playMode;
-    private final AirDefenseConfig config;
-    private final Instant createdAt;
-    private final Map<Long, AirDefensePlayerState> players = new LinkedHashMap<>();
-    private final Map<String, Aircraft> aircraft = new LinkedHashMap<>();
-    private final Map<Long, Deque<AirDefenseQuestion>> questionDecks = new HashMap<>();
-    private final Map<Long, Set<String>> processedCommandIds = new HashMap<>();
-    private final Set<Long> personalBestUserIds = new HashSet<>();
+    private String sessionId;
+    private String roomId;
+    private Long matchId;
 
-    private AirDefenseSessionStatus status = AirDefenseSessionStatus.RUNNING;
-    private long stateVersion;
-    private Instant startedAt;
-    private Instant totalDeadlineAt;
-    private Instant pausedAt;
-    private Instant finishedAt;
-    private long pausedTotalMs;
+    private String playMode; // "SOLO" or "PVP"
+    private boolean ranked;
+    private QuestionLevel jlptLevel;
+    private AnswerMode answerMode;
+
+    private int wave = 1;
+    private int totalWavesCompleted = 0;
+    private AirDefenseSessionStatus status = AirDefenseSessionStatus.PLAYING;
+
+    private Map<Long, AirDefensePlayerState> players = new ConcurrentHashMap<>();
+    private List<AirDefenseTarget> targets = new CopyOnWriteArrayList<>();
+    private List<AugmentType> currentDraftAugments = new CopyOnWriteArrayList<>();
+
+    private LocalDateTime createdAt;
+    private LocalDateTime startedAt;
+    private LocalDateTime finishedAt;
     private Long winnerUserId;
-    private boolean draw;
-    private AirDefenseOutcome outcome;
 
-    public AirDefenseSession(String sessionId, String roomId, Long matchId,
-                             AirDefensePlayMode playMode, AirDefenseConfig config,
-                             Instant createdAt) {
-        this.sessionId = sessionId;
-        this.roomId = roomId;
-        this.matchId = matchId;
-        this.playMode = playMode;
-        this.config = config;
-        this.createdAt = createdAt;
-        this.startedAt = createdAt;
+    public AirDefenseSession() {}
+
+    public static AirDefenseSessionBuilder builder() {
+        return new AirDefenseSessionBuilder();
     }
 
-    public <T> T withLock(Supplier<T> action) {
-        lock.lock();
-        try { return action.get(); } finally { lock.unlock(); }
-    }
+    public static class AirDefenseSessionBuilder {
+        private String sessionId;
+        private String roomId;
+        private Long matchId;
+        private String playMode;
+        private boolean ranked;
+        private QuestionLevel jlptLevel;
+        private AnswerMode answerMode;
+        private int wave = 1;
+        private int totalWavesCompleted = 0;
+        private AirDefenseSessionStatus status = AirDefenseSessionStatus.PLAYING;
+        private Map<Long, AirDefensePlayerState> players = new ConcurrentHashMap<>();
+        private List<AirDefenseTarget> targets = new CopyOnWriteArrayList<>();
+        private List<AugmentType> currentDraftAugments = new CopyOnWriteArrayList<>();
+        private LocalDateTime createdAt;
+        private LocalDateTime startedAt;
+        private LocalDateTime finishedAt;
+        private Long winnerUserId;
 
-    public void withLock(Runnable action) {
-        lock.lock();
-        try { action.run(); } finally { lock.unlock(); }
-    }
+        public AirDefenseSessionBuilder sessionId(String sessionId) { this.sessionId = sessionId; return this; }
+        public AirDefenseSessionBuilder roomId(String roomId) { this.roomId = roomId; return this; }
+        public AirDefenseSessionBuilder matchId(Long matchId) { this.matchId = matchId; return this; }
+        public AirDefenseSessionBuilder playMode(String playMode) { this.playMode = playMode; return this; }
+        public AirDefenseSessionBuilder ranked(boolean ranked) { this.ranked = ranked; return this; }
+        public AirDefenseSessionBuilder jlptLevel(QuestionLevel jlptLevel) { this.jlptLevel = jlptLevel; return this; }
+        public AirDefenseSessionBuilder answerMode(AnswerMode answerMode) { this.answerMode = answerMode; return this; }
+        public AirDefenseSessionBuilder wave(int wave) { this.wave = wave; return this; }
+        public AirDefenseSessionBuilder totalWavesCompleted(int totalWavesCompleted) { this.totalWavesCompleted = totalWavesCompleted; return this; }
+        public AirDefenseSessionBuilder status(AirDefenseSessionStatus status) { this.status = status; return this; }
+        public AirDefenseSessionBuilder players(Map<Long, AirDefensePlayerState> players) { this.players = players; return this; }
+        public AirDefenseSessionBuilder targets(List<AirDefenseTarget> targets) { this.targets = targets; return this; }
+        public AirDefenseSessionBuilder currentDraftAugments(List<AugmentType> currentDraftAugments) { this.currentDraftAugments = currentDraftAugments; return this; }
+        public AirDefenseSessionBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
+        public AirDefenseSessionBuilder startedAt(LocalDateTime startedAt) { this.startedAt = startedAt; return this; }
+        public AirDefenseSessionBuilder finishedAt(LocalDateTime finishedAt) { this.finishedAt = finishedAt; return this; }
+        public AirDefenseSessionBuilder winnerUserId(Long winnerUserId) { this.winnerUserId = winnerUserId; return this; }
 
-    public void addPlayer(AirDefensePlayerState player, List<AirDefenseQuestion> questions) {
-        players.put(player.getUserId(), player);
-        questionDecks.put(player.getUserId(), new ArrayDeque<>(questions));
-        processedCommandIds.put(player.getUserId(), new HashSet<>());
-    }
-
-    public Optional<AirDefenseQuestion> nextQuestion(long userId) {
-        Deque<AirDefenseQuestion> deck = questionDecks.get(userId);
-        return deck == null ? Optional.empty() : Optional.ofNullable(deck.pollFirst());
-    }
-
-    public boolean registerCommand(long userId, String commandId) {
-        if (commandId == null || commandId.isBlank()) {
-            return true;
+        public AirDefenseSession build() {
+            AirDefenseSession s = new AirDefenseSession();
+            s.sessionId = this.sessionId;
+            s.roomId = this.roomId;
+            s.matchId = this.matchId;
+            s.playMode = this.playMode;
+            s.ranked = this.ranked;
+            s.jlptLevel = this.jlptLevel;
+            s.answerMode = this.answerMode;
+            s.wave = this.wave;
+            s.totalWavesCompleted = this.totalWavesCompleted;
+            s.status = this.status;
+            if (this.players != null) s.players = this.players;
+            if (this.targets != null) s.targets = this.targets;
+            if (this.currentDraftAugments != null) s.currentDraftAugments = this.currentDraftAugments;
+            s.createdAt = this.createdAt;
+            s.startedAt = this.startedAt;
+            s.finishedAt = this.finishedAt;
+            s.winnerUserId = this.winnerUserId;
+            return s;
         }
-        Set<String> ids = processedCommandIds.computeIfAbsent(userId, key -> new HashSet<>());
-        if (ids.size() > 500) {
-            ids.clear();
-        }
-        return ids.add(commandId);
     }
 
-    public void markPersonalBest(long userId) {
-        personalBestUserIds.add(userId);
+    public AirDefensePlayerState getPlayer(Long userId) {
+        return players.get(userId);
     }
 
-    public boolean isPersonalBest(long userId) {
-        return personalBestUserIds.contains(userId);
+    public List<AirDefensePlayerState> getPlayerList() {
+        return new ArrayList<>(players.values());
     }
 
-    public List<AirDefensePlayerState> orderedPlayers() {
-        return players.values().stream()
-                .sorted(Comparator.comparingInt(AirDefensePlayerState::getSlot))
-                .toList();
+    public void addTarget(AirDefenseTarget target) {
+        targets.add(target);
     }
 
-    public List<Aircraft> orderedAircraft() {
-        return aircraft.values().stream()
-                .sorted(Comparator.comparing(Aircraft::getSpawnAt))
-                .toList();
+    public void removeDeadTargets() {
+        targets.removeIf(AirDefenseTarget::isDead);
     }
 
-    public List<Aircraft> activeAircraftFor(long userId) {
-        return aircraft.values().stream()
-                .filter(item -> item.getTargetUserId() == userId && item.isActive())
-                .sorted(Comparator.comparing(Aircraft::getImpactAt))
-                .toList();
-    }
-
-    public boolean allQuestionsResolved() {
-        return players.values().stream().allMatch(player ->
-                player.getAircraftSpawned() >= config.questionCount()
-                        && player.getAircraftResolved() >= config.questionCount());
-    }
-
-    public void shiftDeadlines(Duration duration) {
-        if (totalDeadlineAt != null) totalDeadlineAt = totalDeadlineAt.plus(duration);
-        aircraft.values().stream().filter(Aircraft::isActive)
-                .forEach(item -> item.shiftDeadline(duration));
-        pausedTotalMs += Math.max(0, duration.toMillis());
-    }
-
-    public long elapsedMs(Instant now) {
-        Instant end = finishedAt == null ? now : finishedAt;
-        return Math.max(0, Duration.between(startedAt, end).toMillis() - pausedTotalMs);
-    }
-
-    public boolean isParticipant(long userId) { return players.containsKey(userId); }
-    public Optional<Aircraft> findAircraft(String aircraftId) { return Optional.ofNullable(aircraft.get(aircraftId)); }
-    public void addAircraft(Aircraft item) { aircraft.put(item.getAircraftId(), item); }
     public String getSessionId() { return sessionId; }
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+
     public String getRoomId() { return roomId; }
+    public void setRoomId(String roomId) { this.roomId = roomId; }
+
     public Long getMatchId() { return matchId; }
-    public AirDefensePlayMode getPlayMode() { return playMode; }
-    public AirDefenseConfig getConfig() { return config; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Map<Long, AirDefensePlayerState> playersByUserId() { return players; }
+    public void setMatchId(Long matchId) { this.matchId = matchId; }
+
+    public String getPlayMode() { return playMode; }
+    public void setPlayMode(String playMode) { this.playMode = playMode; }
+
+    public boolean isRanked() { return ranked; }
+    public void setRanked(boolean ranked) { this.ranked = ranked; }
+
+    public QuestionLevel getJlptLevel() { return jlptLevel; }
+    public void setJlptLevel(QuestionLevel jlptLevel) { this.jlptLevel = jlptLevel; }
+
+    public AnswerMode getAnswerMode() { return answerMode; }
+    public void setAnswerMode(AnswerMode answerMode) { this.answerMode = answerMode; }
+
+    public int getWave() { return wave; }
+    public void setWave(int wave) { this.wave = wave; }
+
+    public int getTotalWavesCompleted() { return totalWavesCompleted; }
+    public void setTotalWavesCompleted(int totalWavesCompleted) { this.totalWavesCompleted = totalWavesCompleted; }
+
     public AirDefenseSessionStatus getStatus() { return status; }
     public void setStatus(AirDefenseSessionStatus status) { this.status = status; }
-    public long getStateVersion() { return stateVersion; }
-    public long bumpVersion() { return ++stateVersion; }
-    public Instant getStartedAt() { return startedAt; }
-    public Instant getTotalDeadlineAt() { return totalDeadlineAt; }
-    public void setTotalDeadlineAt(Instant totalDeadlineAt) { this.totalDeadlineAt = totalDeadlineAt; }
-    public Instant getPausedAt() { return pausedAt; }
-    public void setPausedAt(Instant pausedAt) { this.pausedAt = pausedAt; }
-    public Instant getFinishedAt() { return finishedAt; }
-    public void setFinishedAt(Instant finishedAt) { this.finishedAt = finishedAt; }
+
+    public Map<Long, AirDefensePlayerState> getPlayers() { return players; }
+    public void setPlayers(Map<Long, AirDefensePlayerState> players) { this.players = players; }
+
+    public List<AirDefenseTarget> getTargets() { return targets; }
+    public void setTargets(List<AirDefenseTarget> targets) { this.targets = targets; }
+
+    public List<AugmentType> getCurrentDraftAugments() { return currentDraftAugments; }
+    public void setCurrentDraftAugments(List<AugmentType> currentDraftAugments) { this.currentDraftAugments = currentDraftAugments; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getStartedAt() { return startedAt; }
+    public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
+
+    public LocalDateTime getFinishedAt() { return finishedAt; }
+    public void setFinishedAt(LocalDateTime finishedAt) { this.finishedAt = finishedAt; }
+
     public Long getWinnerUserId() { return winnerUserId; }
     public void setWinnerUserId(Long winnerUserId) { this.winnerUserId = winnerUserId; }
-    public boolean isDraw() { return draw; }
-    public void setDraw(boolean draw) { this.draw = draw; }
-    public AirDefenseOutcome getOutcome() { return outcome; }
-    public void setOutcome(AirDefenseOutcome outcome) { this.outcome = outcome; }
 }

@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+:root {
+  --background: #070a12;
+  --foreground: #eef7ff;
+  --card: rgba(17, 32, 61, 0.72);
+  --card-foreground: #eef7ff;
+  --primary: #55f4ff;
+  --primary-foreground: #061117;
+  --secondary: #152440;
+  --secondary-foreground: #dbeeff;
+  --muted: #17223b;
+  --muted-foreground: #9cb5d7;
+  --accent: #a979ff;
+  --accent-foreground: #10071f;
+  --border: rgba(105, 196, 255, 0.2);
+  --ring: #55f4ff;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Noto Sans JP', sans-serif;
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+button, input { font: inherit; }
+button { cursor: pointer; }
+
+.air-defence-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(65, 89, 190, .20), transparent 26rem),
+    radial-gradient(circle at 84% 80%, rgba(121, 46, 181, .16), transparent 30rem),
+    linear-gradient(125deg, #070a12 0%, #0a1222 53%, #070a12 100%);
+}
+
+.air-defence-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .26;
+  background-image: radial-gradient(circle, #c1eeff 0.65px, transparent .8px);
+  background-size: 37px 37px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.panel {
+  background: linear-gradient(135deg, rgba(23, 42, 79, .78), rgba(9, 17, 35, .76));
+  border: 1px solid rgba(116, 211, 255, .22);
+  box-shadow: inset 0 1px rgba(220, 255, 255, .06), 0 22px 70px rgba(0, 0, 0, .2);
+  backdrop-filter: blur(18px);
+}
+
+.gridlines {
+  background-image: linear-gradient(rgba(85, 244, 255, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(85, 244, 255, .055) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.font-display { font-family: 'Chakra Petch', sans-serif; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+.text-cyan { color: #55f4ff; }
+
+@media (max-width: 720px) {
+  .air-defence-shell { min-height: 100dvh; }
+}

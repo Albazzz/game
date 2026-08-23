@@ -46,11 +46,6 @@ public class ArenaViewController {
         return "auth/login";
     }
 
-    /**
-     * googleEnabled chỉ true khi app.google.client-id đã cấu hình (hiện đang để trống nên nút Google bị ẩn).
-     * Nút "đăng nhập nhanh" chỉ dành cho local demo (cùng cờ với seeder):
-     * đặt game.demo.seed-enabled=false khi deploy để ẩn hẳn phần này.
-     */
     private void addLoginPageAttributes(Model model) {
         model.addAttribute("googleEnabled", googleTokenService.isEnabled());
         model.addAttribute("googleClientId", appProperties.getGoogle().getClientId());
@@ -85,10 +80,17 @@ public class ArenaViewController {
         return "memory/board";
     }
 
-    /** Chiến trường Air Defense/Cannon Battle do React + PixiJS render. */
+    /** Trang chủ game Air Defence (Command Deck, Hangar, Shop, Talent, Queue). */
+    @GetMapping("/games/air-defense")
+    public String airDefenseHome(Model model) {
+        model.addAttribute("sessionId", "");
+        return "air-defense/board";
+    }
+
+    /** Phòng chơi / Match session Air Defence. */
     @GetMapping("/games/air-defense/{sessionId}")
-    public String airDefense(@PathVariable String sessionId, Model model) {
-        model.addAttribute("sessionId", sessionId);
+    public String airDefenseSession(@PathVariable String sessionId, Model model) {
+        model.addAttribute("sessionId", sessionId != null ? sessionId : "");
         return "air-defense/board";
     }
 }
