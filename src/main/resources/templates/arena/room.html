@@ -1,54 +1,55 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
-<head th:replace="~{fragments/layout :: head('Phòng chờ · Game Arena')}"></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Phòng chờ · Game Arena</title>
+    <link rel="stylesheet" th:href="@{/arena/css/tokens.css}">
+    <link rel="stylesheet" th:href="@{/arena/css/base.css}">
+    <link rel="stylesheet" th:href="@{/arena/css/room.css}">
+</head>
 <body class="room" th:attr="data-room-id=${roomId}">
-
-<!-- TOP BAR -->
 <header class="room-top">
-    <a class="btn btn--ghost" th:href="@{/games/lobby}" data-leave-room>← Rời phòng</a>
+    <a class="room-back" th:href="@{/games/lobby}" data-leave-room>
+        <span aria-hidden="true">←</span> Rời phòng
+    </a>
+    <button type="button" class="btn drawer-toggle" data-toggle-left aria-expanded="false">Cấu hình</button>
 
-    <button type="button" class="btn btn--ghost drawer-toggle" data-toggle-left
-            aria-expanded="false">Cấu hình</button>
+    <div class="room-top__identity">
+        <span class="room-code">
+            <span class="room-code__label">Mã phòng</span>
+            <strong class="room-code__value" data-room-code>———</strong>
+            <button type="button" class="room-code__copy" data-copy-code aria-label="Sao chép mã phòng">Sao chép</button>
+        </span>
+        <span class="conn conn--connecting" data-conn>
+            <span class="conn__dot" aria-hidden="true"></span>
+            <span data-conn-label>Đang kết nối</span>
+        </span>
+    </div>
 
-    <span class="room-code">
-        <span class="room-code__value" data-room-code>——–——</span>
-        <button type="button" class="room-code__copy" data-copy-code
-                aria-label="Sao chép mã phòng">Copy</button>
-    </span>
-
-    <span class="conn conn--connecting" data-conn>
-        <span class="conn__dot" aria-hidden="true"></span>
-        <span data-conn-label>Đang kết nối</span>
-    </span>
-
-    <div class="room-top__spacer"></div>
-
-    <span class="tag tag--muted" title="Voice chat sẽ có ở bản sau">Voice · soon</span>
-
-    <button type="button" class="btn btn--ghost drawer-toggle" data-toggle-right
-            aria-expanded="false">Thông tin</button>
+    <div class="room-top__tools">
+        <span class="room-voice" title="Voice chat sẽ có ở bản sau">🎙 Voice · sắp có</span>
+        <button type="button" class="btn drawer-toggle" data-toggle-right aria-expanded="false">Thông tin</button>
+    </div>
 </header>
 
 <div class="room-body">
-    <!-- LEFT: settings -->
     <aside class="panel room-left" data-panel-left>
         <div class="panel__head">
-            <h2 class="panel__title">Cấu hình trận</h2>
+            <div>
+                <span class="panel__eyebrow">Thiết lập phòng</span>
+                <h2 class="panel__title"><span aria-hidden="true">⚙</span> Cấu hình trận</h2>
+            </div>
             <span class="tag tag--sakura" data-host-only hidden>Host</span>
         </div>
         <div class="panel__body">
-            <p class="settings-note" data-guest-note hidden>
-                Chỉ chủ phòng thay đổi được cấu hình.
-            </p>
+            <p class="settings-note" data-guest-note hidden>Chỉ chủ phòng thay đổi được cấu hình.</p>
             <form class="settings-list" data-settings-form>
                 <div class="field">
                     <label class="field__label" for="set-level">Cấp độ</label>
                     <select class="select" id="set-level" name="questionLevel">
-                        <option value="N5">N5</option>
-                        <option value="N4">N4</option>
-                        <option value="N3">N3</option>
-                        <option value="N2">N2</option>
-                        <option value="N1">N1</option>
+                        <option value="N5">N5</option><option value="N4">N4</option><option value="N3">N3</option>
+                        <option value="N2">N2</option><option value="N1">N1</option>
                     </select>
                 </div>
                 <div class="field">
@@ -64,122 +65,116 @@
                     <label class="field__label" for="set-mode">Chế độ trả lời</label>
                     <select class="select" id="set-mode" name="answerMode"></select>
                 </div>
-                <div class="field">
-                    <label class="field__label" for="set-count">Số câu</label>
-                    <input class="input" type="number" id="set-count" name="questionCount"
-                           min="5" max="60" step="1">
+                <div class="settings-grid">
+                    <div class="field">
+                        <label class="field__label" for="set-count">Số câu</label>
+                        <input class="input" type="number" id="set-count" name="questionCount" min="5" max="60" step="1">
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="set-seconds">Giây / câu</label>
+                        <input class="input" type="number" id="set-seconds" name="secondsPerQuestion" min="5" max="60" step="1">
+                    </div>
                 </div>
-                <div class="field">
-                    <label class="field__label" for="set-seconds">Giây mỗi câu</label>
-                    <input class="input" type="number" id="set-seconds" name="secondsPerQuestion"
-                           min="5" max="60" step="1">
-                </div>
-                <div data-air-settings hidden>
+                <div class="air-settings" data-air-settings hidden>
                     <div class="field">
                         <label class="field__label" for="set-air-objective">Luật Air Defense</label>
                         <select class="select" id="set-air-objective" name="airObjective">
-                            <option value="SCORE_RACE">Đua trả lời đúng</option>
-                            <option value="SURVIVAL">Sinh tồn</option>
+                            <option value="SCORE_RACE">Đua trả lời đúng</option><option value="SURVIVAL">Sinh tồn</option>
                         </select>
                     </div>
                     <div class="field">
                         <label class="field__label" for="set-air-difficulty">Độ khó</label>
                         <select class="select" id="set-air-difficulty" name="airDifficulty">
-                            <option value="EASY">Dễ</option>
-                            <option value="NORMAL">Thường</option>
-                            <option value="HARD">Khó</option>
+                            <option value="EASY">Dễ</option><option value="NORMAL">Thường</option><option value="HARD">Khó</option>
                         </select>
                     </div>
-                    <div class="field">
-                        <label class="field__label" for="set-air-target">Số câu đúng để thắng</label>
-                        <input class="input" type="number" id="set-air-target" name="airTargetScore"
-                               min="5" max="50" step="1" value="10">
-                    </div>
-                    <div class="field">
-                        <label class="field__label" for="set-air-hp">HP ban đầu</label>
-                        <input class="input" type="number" id="set-air-hp" name="airMaxHp"
-                               min="1" max="10" step="1" value="3">
+                    <div class="settings-grid">
+                        <div class="field">
+                            <label class="field__label" for="set-air-target">Mục tiêu</label>
+                            <input class="input" type="number" id="set-air-target" name="airTargetScore" min="5" max="50" step="1" value="10">
+                        </div>
+                        <div class="field">
+                            <label class="field__label" for="set-air-hp">HP ban đầu</label>
+                            <input class="input" type="number" id="set-air-hp" name="airMaxHp" min="1" max="10" step="1" value="3">
+                        </div>
                     </div>
                 </div>
             </form>
         </div>
+        <p class="panel-tip">❄ Cài đặt được đồng bộ cho mọi người trong phòng.</p>
     </aside>
 
-    <!-- CENTER: player slots -->
     <main class="room-center">
+        <div class="room-heading">
+            <span class="room-heading__kicker">Snowball Cats Arena</span>
+            <h1>Ai sẽ là nhà vô địch?</h1>
+            <p>Sẵn sàng và cùng bắt đầu trận đấu nhé!</p>
+        </div>
         <section class="versus" data-versus aria-live="polite">
             <div class="state" data-versus-loading>
                 <div class="spinner" aria-hidden="true"></div>
                 <p>Đang tải phòng…</p>
             </div>
         </section>
-
         <div class="room-actions">
             <span class="room-actions__hint" data-action-hint>Đang chờ dữ liệu phòng…</span>
-            <button type="button" class="btn btn--lg" data-ready-btn hidden>Sẵn sàng</button>
-            <button type="button" class="btn btn--primary btn--lg" data-start-btn hidden disabled>
-                Bắt đầu
-            </button>
+            <div class="room-actions__buttons">
+                <button type="button" class="btn btn--lg" data-ready-btn hidden>✓ Sẵn sàng</button>
+                <button type="button" class="btn btn--primary btn--lg" data-start-btn hidden disabled>Bắt đầu trận <span aria-hidden="true">➜</span></button>
+            </div>
         </div>
     </main>
 
-    <!-- RIGHT: room info / invite -->
     <aside class="panel room-right" data-panel-right>
         <div class="panel__head">
-            <h2 class="panel__title">Thông tin phòng</h2>
+            <div>
+                <span class="panel__eyebrow">Phòng hiện tại</span>
+                <h2 class="panel__title"><span aria-hidden="true">🏠</span> Thông tin phòng</h2>
+            </div>
         </div>
         <div class="panel__body">
-            <div class="info-row">
-                <span class="info-row__label">Chế độ</span>
-                <span class="info-row__value" data-info-game>—</span>
-            </div>
-            <div class="info-row">
-                <span class="info-row__label">Trạng thái</span>
-                <span class="info-row__value" data-info-status>—</span>
-            </div>
-            <div class="info-row">
-                <span class="info-row__label">Người chơi</span>
-                <span class="info-row__value" data-info-players>—</span>
-            </div>
-            <div class="info-row">
-                <span class="info-row__label">Hiển thị</span>
-                <span class="info-row__value" data-info-visibility>—</span>
+            <div class="invite-box">
+                <div class="invite-box__icon" aria-hidden="true">✉</div>
+                <div>
+                    <strong>Mời bạn bè</strong>
+                    <p>Gửi link để cùng tham gia ngay.</p>
+                </div>
+                <label class="sr-only" for="invite-link">Link mời</label>
+                <input class="input" id="invite-link" data-invite-link readonly>
+                <button type="button" class="btn" data-copy-link>Sao chép link mời</button>
             </div>
 
-            <div class="invite-box">
-                <label class="field__label" for="invite-link">Link mời</label>
-                <input class="input" id="invite-link" data-invite-link readonly>
-                <button type="button" class="btn" data-copy-link>Sao chép link</button>
+            <div class="room-stats">
+                <div class="info-row"><span class="info-row__label">Chế độ</span><span class="info-row__value" data-info-game>—</span></div>
+                <div class="info-row"><span class="info-row__label">Trạng thái</span><span class="info-row__value" data-info-status>—</span></div>
+                <div class="info-row"><span class="info-row__label">Người chơi</span><span class="info-row__value" data-info-players>—</span></div>
+                <div class="info-row"><span class="info-row__label">Hiển thị</span><span class="info-row__value" data-info-visibility>—</span></div>
+            </div>
+
+            <div class="room-log">
+                <h3>Hoạt động</h3>
+                <p><span class="room-log__dot"></span> Phòng đã sẵn sàng kết nối</p>
+                <p><span class="room-log__dot"></span> Đang chờ thêm người chơi</p>
             </div>
         </div>
+        <p class="panel-tip">☃ Chúc bạn có một trận đấu thật vui!</p>
     </aside>
 </div>
 
-<!-- Countdown overlay: render theo startAt/endAt của server -->
-<div class="overlay is-hidden" data-countdown-overlay role="alertdialog"
-     aria-live="assertive" aria-label="Đếm ngược bắt đầu trận">
-    <div class="countdown">
-        <div class="countdown__number" data-countdown-number>3</div>
-        <div class="countdown__label jp">はじめ</div>
-    </div>
+<div class="overlay is-hidden" data-countdown-overlay role="alertdialog" aria-live="assertive" aria-label="Đếm ngược bắt đầu trận">
+    <div class="countdown"><div class="countdown__number" data-countdown-number>3</div><div class="countdown__label">BẮT ĐẦU!</div></div>
 </div>
-
-<!-- Reconnect overlay -->
-<div class="overlay is-hidden" data-reconnect-overlay role="alertdialog"
-     aria-live="assertive" aria-label="Mất kết nối">
+<div class="overlay is-hidden" data-reconnect-overlay role="alertdialog" aria-live="assertive" aria-label="Mất kết nối">
     <div class="reconnect">
         <div class="spinner" aria-hidden="true"></div>
         <h2 class="reconnect__title">Mất kết nối</h2>
-        <p class="reconnect__text">
-            Đang thử kết nối lại. Chỗ của bạn được giữ trong ít giây.
-        </p>
-        <button type="button" class="btn btn--ghost" data-reload-page>Tải lại trang</button>
+        <p class="reconnect__text">Đang thử kết nối lại. Chỗ của bạn được giữ trong ít giây.</p>
+        <button type="button" class="btn" data-reload-page>Tải lại trang</button>
     </div>
 </div>
 
 <div th:replace="~{fragments/layout :: toast}"></div>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-<!-- Webjar path có version: dự án không dùng webjars-locator nên không rút gọn được. -->
 <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
 <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
 <script th:src="@{/arena/js/room-store.js}"></script>

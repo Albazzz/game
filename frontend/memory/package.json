@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@3d-dice/dice-box": "^1.1.4",
     "framer-motion": "^12.23.12",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -94,7 +94,9 @@ public class RoomService {
         GameType gameType = request.gameType();
         GameRuleMetadata metadata = GameRuleMetadata.of(gameType);
         RoomVisibility visibility = request.visibility() == null
-                ? RoomVisibility.PRIVATE
+                // Lobby đang mặc định chọn Công khai; giữ cùng một default ở server
+                // để request thiếu field visibility không vô tình biến thành phòng kín.
+                ? RoomVisibility.PUBLIC
                 : request.visibility();
         int maxPlayers = metadata.clampMaxPlayers(request.maxPlayers());
 
