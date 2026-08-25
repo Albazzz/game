@@ -1003,7 +1003,8 @@ function DevSandboxView() {
     triggerWaveClear,
     killTargetById,
     startMatch,
-    openSettings
+    openSettings,
+    resetSandbox
   } = useAirDefenseStore();
 
   return (
@@ -1017,6 +1018,16 @@ function DevSandboxView() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {/* Reset Sandbox Button */}
+          <button
+            onClick={resetSandbox}
+            className="px-2.5 py-1 rounded-lg border border-rose-400/40 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 font-mono text-[10px] font-bold transition flex items-center gap-1.5"
+            title="Khởi tạo lại trạng thái Sandbox về Wave 1"
+          >
+            <span>↺</span>
+            <span>RESET SANDBOX</span>
+          </button>
+
           {/* God Mode Toggle */}
           <button
             onClick={toggleGodMode}

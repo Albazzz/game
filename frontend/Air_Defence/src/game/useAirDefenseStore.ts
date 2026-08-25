@@ -256,6 +256,7 @@ interface AirDefenseState {
   healPlayer: (amount?: number) => void;
   damagePlayer: (amount?: number) => void;
   triggerWaveClear: () => void;
+  resetSandbox: () => void;
 }
 
 let autoPilotCounter = 0;
@@ -329,9 +330,40 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   },
 
   setScreen: (screen) => {
+    if (screen === "sandbox") {
+      const { talentLevels, equippedShipId } = get();
+      const ship = SHIPS_CATALOG.find((s) => s.id === equippedShipId) || SHIPS_CATALOG[0];
+      const initialHp = ship.hp + talentLevels.hull * GAME_CONFIG.TALENTS.hullBonusPerLevel;
+      const initialTargets = generateWave(1);
+      soundManager.switchBgm("battle");
+      set({
+        screen: "sandbox",
+        wave: 1,
+        hp: initialHp,
+        maxHp: initialHp,
+        shield: 0,
+        score: 0,
+        combo: 0,
+        creditsEarned: 0,
+        hyperBeamCharge: 0,
+        targets: initialTargets,
+        lootItems: [],
+        floatingTexts: [],
+        activeAugments: [],
+        weakWords: [],
+        dangerZoneActive: false,
+        screenShake: false,
+        inboundBoss: false,
+        isTransitioning: false,
+        introState: { active: false, phase: "done" },
+        waveTransition: { active: false, phase: "none", clearedWave: 0, incomingWave: 1, isBoss: false }
+      });
+      return;
+    }
+
     set({ screen });
     // Contextual BGM Switching
-    if (["deck", "hangar", "talent", "shop", "queue", "rank", "debrief", "settings", "sandbox"].includes(screen)) {
+    if (["deck", "hangar", "talent", "shop", "queue", "rank", "debrief", "settings"].includes(screen)) {
       soundManager.switchBgm("lobby");
     } else if (screen === "endless" || screen === "pvp") {
       const isBoss = get().inboundBoss;
@@ -392,23 +424,24 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       }
     });
 
+    // 3-Stage Cinematic Match Intro (Chậm rãi, rõ nét và kịch tính)
     setTimeout(() => {
       if (get().introState.active) {
         set({ introState: { active: true, phase: "warpin" } });
       }
-    }, 700);
+    }, 1300);
 
     setTimeout(() => {
       if (get().introState.active) {
         set({ introState: { active: true, phase: "ready" } });
       }
-    }, 1500);
+    }, 2600);
 
     setTimeout(() => {
       if (get().introState.active) {
         set({ introState: { active: false, phase: "done" } });
       }
-    }, 2300);
+    }, 3800);
   },
 
   skipIntro: () => {
@@ -848,6 +881,34 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   damagePlayer: (amt = 25) => set((s) => ({ hp: Math.max(1, s.hp - amt), dangerZoneActive: true })),
   triggerWaveClear: () => get().advanceToNextWave(),
 
+  resetSandbox: () => {
+    const { talentLevels, equippedShipId } = get();
+    const ship = SHIPS_CATALOG.find((s) => s.id === equippedShipId) || SHIPS_CATALOG[0];
+    const initialHp = ship.hp + talentLevels.hull * GAME_CONFIG.TALENTS.hullBonusPerLevel;
+    const initialTargets = generateWave(1);
+    soundManager.switchBgm("battle");
+    set({
+      wave: 1,
+      hp: initialHp,
+      maxHp: initialHp,
+      shield: 0,
+      score: 0,
+      combo: 0,
+      creditsEarned: 0,
+      hyperBeamCharge: 0,
+      targets: initialTargets,
+      lootItems: [],
+      floatingTexts: [],
+      activeAugments: [],
+      weakWords: [],
+      dangerZoneActive: false,
+      screenShake: false,
+      inboundBoss: false,
+      isTransitioning: false,
+      waveTransition: { active: false, phase: "none", clearedWave: 0, incomingWave: 1, isBoss: false }
+    });
+  },
+
   tickGameLoop: (delta) => {
     const { targets, lootItems, floatingTexts, hp, maxHp, shield, creditsEarned, hyperBeamCharge, screen, weakWords, isTransitioning, advanceToNextWave, introState, godMode, autoPilot, gameTimeScale, killTargetById } = get();
     if (screen !== "endless" && screen !== "pvp" && screen !== "sandbox") return;
@@ -924,6 +985,11 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         }, 300);
 
         if (nextHp <= 0) {
+          if (screen === "sandbox") {
+            // In Sandbox mode: auto-revive to maxHp and stay in Sandbox!
+            set({ hp: maxHp, dangerZoneActive: false });
+            return;
+          }
           soundManager.switchBgm("lobby");
           set({ screen: "debrief" });
           return;
