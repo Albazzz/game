@@ -51,7 +51,24 @@ export const GAME_CONFIG = {
   },
 
   // --------------------------------------------------------------------------
-  // 3. CÂN BẰNG ĐIỂM SỐ & PHẦN THƯỞNG (SCORING & REWARDS)
+  // 3. CÂN BẰNG RƠI VẬT PHẨM (LOOT DROP & REWARD SYSTEM)
+  // --------------------------------------------------------------------------
+  LOOT: {
+    enabled: true,                   // Bật hệ thống rơi vật phẩm
+    creditDropChance: 0.85,          // 85% tỉ lệ rơi Tinh Thể Credits khi quái nổ
+    repairDropChance: 0.25,          // 25% tỉ lệ rơi Hộp Nano hồi máu
+    hyperOrbDropChance: 0.35,        // 35% tỉ lệ rơi Cầu Năng Lượng Hyper Beam
+    bossLootMultiplier: 5,           // Số lượng vật phẩm rơi gấp 5 lần khi hạ Boss
+    magnetDistance: 45,              // Khoảng cách % màn hình kích hoạt nam châm hút về tàu
+    magnetSpeed: 0.18,               // Tốc độ bay của vật phẩm khi bị hút
+    creditValueMin: 15,              // Giá trị Credits tối thiểu mỗi viên pha lê
+    creditValueMax: 40,              // Giá trị Credits tối đa mỗi viên pha lê
+    repairValue: 15,                 // Lượng HP hồi khi nhặt Hộp Nano
+    hyperOrbCharge: 20               // % Năng lượng Hyper Beam nạp khi nhặt Cầu Plasma
+  },
+
+  // --------------------------------------------------------------------------
+  // 4. CÂN BẰNG ĐIỂM SỐ & PHẦN THƯỞNG (SCORING & REWARDS)
   // --------------------------------------------------------------------------
   SCORING: {
     baseScorePerTarget: 150,         // Điểm cơ bản khi bắn nổ 1 quái
@@ -65,7 +82,7 @@ export const GAME_CONFIG = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. VIỆN NÂNG CẤP VĨNH VIỄN (PERMANENT TALENT UPGRADES)
+  // 5. VIỆN NÂNG CẤP VĨNH VIỄN (PERMANENT TALENT UPGRADES)
   // --------------------------------------------------------------------------
   TALENTS: {
     upgradeCostCredits: 480,         // Giá nâng cấp mỗi cấp Talent
@@ -75,7 +92,7 @@ export const GAME_CONFIG = {
   },
 
   // --------------------------------------------------------------------------
-  // 5. ĐỒ HỌA, SPRITES VÀ HIỆU ỨNG (VISUALS & SPRITE ASSETS)
+  // 6. ĐỒ HỌA, INTRO & HIỆU ỨNG (VISUALS & INTRO)
   // --------------------------------------------------------------------------
   VISUALS: {
     starfieldCount: 65,              // Số lượng hạt sao nền không gian
@@ -84,23 +101,27 @@ export const GAME_CONFIG = {
     screenShakeDurationFrames: 8,    // Số frame rung màn hình khi bị đánh trúng
     laserBeamDurationMs: 160,        // Thời gian tia Laser neon hiển thị (ms)
     laserBeamWidth: 4,               // Độ dày tia Laser
-    laserGlowWidth: 12               // Độ dày ánh sáng vầng hào quang Laser
+    laserGlowWidth: 12,              // Độ dày ánh sáng vầng hào quang Laser
+    introDurationMs: 2400            // Thời lượng hoạt cảnh Intro khởi động trận đấu
   },
 
   // --------------------------------------------------------------------------
-  // 6. ÂM THANH & HIỆU ỨNG ÂM THANH (AUDIO & SFX SYNTHESIZER)
+  // 7. ÂM THANH & NHẠC NỀN BGM DYNAMIC (AUDIO & ADAPTIVE BGM)
   // --------------------------------------------------------------------------
   AUDIO: {
-    enabled: true,                   // Bật/tắt âm thanh
-    masterVolume: 0.35,              // Âm lượng tổng thể (0.0 -> 1.0)
+    enabled: true,                   // Bật/tắt toàn bộ âm thanh
+    bgmEnabled: true,                // Bật/tắt nhạc nền tự động
+    masterVolume: 0.40,              // Âm lượng tổng thể (0.0 -> 1.0)
+    bgmVolume: 0.28,                 // Âm lượng nhạc nền BGM
     laserVolume: 0.5,                // Âm lượng tiếng bắn laser
     explosionVolume: 0.7,            // Âm lượng tiếng quái nổ
     hyperBeamVolume: 0.9,            // Âm lượng chùm tia Hyper Beam
-    comboDingVolume: 0.45            // Âm lượng chuông combo
+    comboDingVolume: 0.45,           // Âm lượng chuông combo
+    itemCollectVolume: 0.55          // Âm lượng tiếng nhặt vật phẩm
   },
 
   // --------------------------------------------------------------------------
-  // 7. DANH MỤC TÀU CHIẾN & ASSET MAPPING (SPACESHIPS DATABASE)
+  // 8. DANH MỤC TÀU CHIẾN & ASSET MAPPING (SPACESHIPS DATABASE)
   // --------------------------------------------------------------------------
   SHIPS: [
     {

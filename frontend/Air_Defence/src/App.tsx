@@ -11,7 +11,9 @@ const nav: { id: Screen; icon: string; label: string }[] = [
   { id: "talent", icon: "✦", label: "Talent Lab" },
   { id: "shop", icon: "◉", label: "Supply Dock" },
   { id: "queue", icon: "⌁", label: "Match Queue" },
-  { id: "rank", icon: "▤", label: "Rank Archive" }
+  { id: "rank", icon: "▤", label: "Rank Archive" },
+  { id: "settings", icon: "⚙", label: "Audio & System" },
+  { id: "sandbox", icon: "🛠", label: "Dev Sandbox" }
 ];
 
 function Stat({ label, value, tone = "cyan" }: { label: string; value: string | number; tone?: "cyan" | "amber" | "violet" | "rose" }) {
@@ -360,7 +362,8 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
     submitAnswer,
     fireHyperBeam,
     setScreen,
-    inboundBoss
+    inboundBoss,
+    openSettings
   } = useAirDefenseStore();
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -419,27 +422,40 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
             {shield > 0 && <span className="font-mono text-[10px] text-[#ffc857] font-bold">SHIELD: {shield}</span>}
           </div>
 
-          {/* Hyper Beam Button & Gauge */}
-          <div className="pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur px-3 py-1 rounded-lg border border-white/10">
-            <div className="w-28 sm:w-36">
-              <div className="flex justify-between font-mono text-[8px] text-slate-300 mb-0.5">
-                <span>HYPER BEAM</span>
-                <span>{hyperBeamCharge}%</span>
+          {/* Action & Settings Buttons */}
+          <div className="pointer-events-auto flex items-center gap-2">
+            {/* Hyper Beam Button & Gauge */}
+            <div className="flex items-center gap-2.5 bg-black/50 backdrop-blur px-3 py-1 rounded-lg border border-white/10">
+              <div className="w-24 sm:w-32">
+                <div className="flex justify-between font-mono text-[8px] text-slate-300 mb-0.5">
+                  <span>HYPER BEAM</span>
+                  <span>{hyperBeamCharge}%</span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden bg-white/10">
+                  <div className="h-full bg-violet-400 transition-all duration-200" style={{ width: `${hyperBeamCharge}%` }} />
+                </div>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden bg-white/10">
-                <div className="h-full bg-violet-400 transition-all duration-200" style={{ width: `${hyperBeamCharge}%` }} />
-              </div>
+              <button
+                onClick={fireHyperBeam}
+                disabled={hyperBeamCharge < GAME_CONFIG.PLAYER.hyperBeamMaxCharge}
+                className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold transition ${
+                  hyperBeamCharge >= GAME_CONFIG.PLAYER.hyperBeamMaxCharge
+                    ? "border-violet-400 bg-violet-500 text-white animate-pulse shadow-[0_0_16px_rgba(169,121,255,.6)]"
+                    : "border-white/10 bg-white/5 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                ⚡ BẮN BEAM
+              </button>
             </div>
+
+            {/* Quick Settings Button */}
             <button
-              onClick={fireHyperBeam}
-              disabled={hyperBeamCharge < GAME_CONFIG.PLAYER.hyperBeamMaxCharge}
-              className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold transition ${
-                hyperBeamCharge >= GAME_CONFIG.PLAYER.hyperBeamMaxCharge
-                  ? "border-violet-400 bg-violet-500 text-white animate-pulse shadow-[0_0_16px_rgba(169,121,255,.6)]"
-                  : "border-white/10 bg-white/5 text-slate-500 cursor-not-allowed"
-              }`}
+              onClick={openSettings}
+              className="flex items-center gap-1.5 bg-black/50 backdrop-blur px-2.5 py-1.5 rounded-lg border border-cyan-300/30 text-cyan hover:bg-cyan-300/15 transition font-mono text-[10px] font-bold"
+              title="Cài Đặt Âm Thanh"
             >
-              ⚡ BẮN BEAM
+              <span>⚙</span>
+              <span className="hidden sm:inline">CÀI ĐẶT</span>
             </button>
           </div>
         </div>
@@ -720,8 +736,526 @@ function Header({ eyebrow, title, detail }: { eyebrow: string; title: string; de
   );
 }
 
+function AudioSettingsView({ isModal = false, onClose }: { isModal?: boolean; onClose?: () => void }) {
+  const { audioSettings, updateAudioSettings } = useAirDefenseStore();
+
+  return (
+    <div className={`h-full flex flex-col justify-between overflow-y-auto pr-1 max-w-4xl mx-auto w-full ${isModal ? "p-4" : ""}`}>
+      <div className="flex items-center justify-between">
+        <Header
+          eyebrow="SYSTEM CALIBRATION // AUDIO & ACOUSTICS"
+          title="Cài Đặt Âm Thanh & BGM"
+          detail="Tùy chỉnh chi tiết âm lượng nhạc nền động, hiệu ứng tác chiến và âm gõ phím cơ."
+        />
+        {isModal && onClose && (
+          <button
+            onClick={onClose}
+            className="size-9 rounded-xl border border-white/20 bg-white/5 font-display text-base text-slate-300 hover:bg-white/15 hover:text-white transition flex items-center justify-center"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 flex-1 my-2">
+        {/* 1. Master Audio */}
+        <Panel className="p-4 sm:p-5 border-cyan-300/30 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <Pill tone="cyan">MASTER AUDIO</Pill>
+                <h3 className="font-display text-base font-bold mt-1 text-white">Âm Lượng Tổng</h3>
+              </div>
+              <button
+                onClick={() => updateAudioSettings({ masterEnabled: !audioSettings.masterEnabled })}
+                className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold border transition ${
+                  audioSettings.masterEnabled
+                    ? "border-cyan-300 bg-cyan-300/20 text-cyan shadow-[0_0_12px_rgba(85,244,255,0.4)]"
+                    : "border-white/10 bg-white/5 text-slate-500"
+                }`}
+              >
+                {audioSettings.masterEnabled ? "BẬT [ON]" : "TẮT [OFF]"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">Điều khiển công tắc nguồn và mức âm lượng của toàn bộ trò chơi.</p>
+          </div>
+
+          <div>
+            <div className="flex justify-between font-mono text-xs text-slate-300 mb-1.5">
+              <span>MỨC ÂM LƯỢNG CHÍNH</span>
+              <span className="text-cyan font-bold">{audioSettings.masterVolume}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={audioSettings.masterVolume}
+              onChange={(e) => updateAudioSettings({ masterVolume: Number(e.target.value) })}
+              className="w-full accent-cyan bg-slate-800 rounded-lg h-2 cursor-pointer"
+            />
+          </div>
+        </Panel>
+
+        {/* 2. Background Music (BGM) */}
+        <Panel className="p-4 sm:p-5 border-violet-300/30 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <Pill tone="violet">ADAPTIVE BGM</Pill>
+                <h3 className="font-display text-base font-bold mt-1 text-white">Nhạc Nền Động</h3>
+              </div>
+              <button
+                onClick={() => updateAudioSettings({ bgmEnabled: !audioSettings.bgmEnabled })}
+                className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold border transition ${
+                  audioSettings.bgmEnabled
+                    ? "border-violet-400 bg-violet-400/20 text-violet-300 shadow-[0_0_12px_rgba(169,121,255,0.4)]"
+                    : "border-white/10 bg-white/5 text-slate-500"
+                }`}
+              >
+                {audioSettings.bgmEnabled ? "BẬT [ON]" : "TẮT [OFF]"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-3">Tự động thích ứng giai điệu: Sảnh Chỉ Huy, Trận Đấu và Đại Chiến Boss.</p>
+          </div>
+
+          <div>
+            <div className="flex justify-between font-mono text-xs text-slate-300 mb-1.5">
+              <span>ÂM LƯỢNG NHẠC NỀN</span>
+              <span className="text-[#c3a6ff] font-bold">{audioSettings.bgmVolume}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={audioSettings.bgmVolume}
+              onChange={(e) => updateAudioSettings({ bgmVolume: Number(e.target.value) })}
+              className="w-full accent-violet-400 bg-slate-800 rounded-lg h-2 cursor-pointer mb-3"
+            />
+
+            {/* Test BGM Buttons */}
+            <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/5">
+              <span className="font-mono text-[9px] text-slate-500 self-center mr-1">THỬ BGM:</span>
+              <button
+                onClick={() => soundManager.switchBgm("lobby")}
+                className="px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300 transition"
+              >
+                🎧 Sảnh
+              </button>
+              <button
+                onClick={() => soundManager.switchBgm("battle")}
+                className="px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300 transition"
+              >
+                ⚡ Battle
+              </button>
+              <button
+                onClick={() => soundManager.switchBgm("boss")}
+                className="px-2 py-1 rounded-lg border border-rose-400/30 bg-rose-500/10 hover:bg-rose-500/20 font-mono text-[9px] text-rose-300 transition"
+              >
+                💀 Boss
+              </button>
+            </div>
+          </div>
+        </Panel>
+
+        {/* 3. Sound Effects (SFX) */}
+        <Panel className="p-4 sm:p-5 border-amber-300/30 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <Pill tone="amber">COMBAT SFX</Pill>
+                <h3 className="font-display text-base font-bold mt-1 text-white">Hiệu Ứng Chiến Đấu</h3>
+              </div>
+              <button
+                onClick={() => updateAudioSettings({ sfxEnabled: !audioSettings.sfxEnabled })}
+                className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold border transition ${
+                  audioSettings.sfxEnabled
+                    ? "border-amber-400 bg-amber-400/20 text-[#ffc857] shadow-[0_0_12px_rgba(255,200,87,0.4)]"
+                    : "border-white/10 bg-white/5 text-slate-500"
+                }`}
+              >
+                {audioSettings.sfxEnabled ? "BẬT [ON]" : "TẮT [OFF]"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-3">Âm thanh bắn Laser, quái nổ, nhặt tinh thể pha lê và năng lượng beam.</p>
+          </div>
+
+          <div>
+            <div className="flex justify-between font-mono text-xs text-slate-300 mb-1.5">
+              <span>ÂM LƯỢNG HIỆU ỨNG</span>
+              <span className="text-[#ffc857] font-bold">{audioSettings.sfxVolume}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={audioSettings.sfxVolume}
+              onChange={(e) => updateAudioSettings({ sfxVolume: Number(e.target.value) })}
+              className="w-full accent-amber-400 bg-slate-800 rounded-lg h-2 cursor-pointer mb-3"
+            />
+
+            {/* Test SFX Buttons */}
+            <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/5">
+              <span className="font-mono text-[9px] text-slate-500 self-center mr-1">THỬ SFX:</span>
+              <button
+                onClick={() => soundManager.playLaser()}
+                className="px-2 py-1 rounded-lg border border-cyan-300/30 bg-cyan-300/10 hover:bg-cyan-300/20 font-mono text-[9px] text-cyan transition"
+              >
+                ⚡ Laser
+              </button>
+              <button
+                onClick={() => soundManager.playExplosion()}
+                className="px-2 py-1 rounded-lg border border-amber-300/30 bg-amber-300/10 hover:bg-amber-300/20 font-mono text-[9px] text-[#ffc857] transition"
+              >
+                💥 Nổ Quái
+              </button>
+              <button
+                onClick={() => soundManager.playItemCollect("CREDIT_CRYSTAL")}
+                className="px-2 py-1 rounded-lg border border-amber-300/30 bg-amber-300/10 hover:bg-amber-300/20 font-mono text-[9px] text-[#ffc857] transition"
+              >
+                💎 Nhặt Đá
+              </button>
+              <button
+                onClick={() => soundManager.playWaveClear()}
+                className="px-2 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300 transition"
+              >
+                🏆 Thắng Wave
+              </button>
+            </div>
+          </div>
+        </Panel>
+
+        {/* 4. Keystroke Typing Audio */}
+        <Panel className="p-4 sm:p-5 border-white/10 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <Pill tone="cyan">KEYSTROKE SFX</Pill>
+                <h3 className="font-display text-base font-bold mt-1 text-white">Âm Gõ Phím Cơ Sci-Fi</h3>
+              </div>
+              <button
+                onClick={() => updateAudioSettings({ keystrokeEnabled: !audioSettings.keystrokeEnabled })}
+                className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold border transition ${
+                  audioSettings.keystrokeEnabled
+                    ? "border-cyan-300 bg-cyan-300/20 text-cyan shadow-[0_0_12px_rgba(85,244,255,0.4)]"
+                    : "border-white/10 bg-white/5 text-slate-500"
+                }`}
+              >
+                {audioSettings.keystrokeEnabled ? "BẬT [ON]" : "TẮT [OFF]"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">Tạo tiếng clicky nhịp nhàng mỗi khi gõ phím vào ô nhập từ vựng tiếng Nhật.</p>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-white/10">
+            <button
+              onClick={() => soundManager.playKeyStroke()}
+              className="px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-xs text-slate-200 transition"
+            >
+              ⌨ Thử Gõ Phím
+            </button>
+            <button
+              onClick={() =>
+                updateAudioSettings({
+                  masterEnabled: true,
+                  masterVolume: 80,
+                  bgmEnabled: true,
+                  bgmVolume: 70,
+                  sfxEnabled: true,
+                  sfxVolume: 85,
+                  keystrokeEnabled: true
+                })
+              }
+              className="px-3 py-1.5 rounded-xl border border-rose-400/30 bg-rose-500/10 hover:bg-rose-500/20 font-mono text-[10px] font-bold text-rose-300 transition"
+            >
+              ↺ KHÔI PHỤC MẶC ĐỊNH
+            </button>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function DevSandboxView() {
+  const {
+    wave,
+    hp,
+    maxHp,
+    score,
+    combo,
+    creditsEarned,
+    hyperBeamCharge,
+    targets,
+    godMode,
+    autoPilot,
+    gameTimeScale,
+    toggleGodMode,
+    toggleAutoPilot,
+    setGameTimeScale,
+    jumpToWave,
+    spawnBossInstantly,
+    forceAugmentDraft,
+    triggerLootBurst,
+    addCredits,
+    maxHyperBeam,
+    healPlayer,
+    damagePlayer,
+    triggerWaveClear,
+    killTargetById,
+    startMatch,
+    openSettings,
+    resetSandbox
+  } = useAirDefenseStore();
+
+  return (
+    <div className="h-full flex flex-col justify-between overflow-hidden gap-3">
+      {/* Top Sandbox Header & Telemetry */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+        <div className="flex items-center gap-3">
+          <Pill tone="amber">🛠 DEVELOPER SANDBOX // NO-JAPANESE MODE</Pill>
+          <h1 className="font-display text-lg sm:text-xl font-bold text-white">
+            Phòng Thí Nghiệm & Bảng Điều Khiển Dev
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Reset Sandbox Button */}
+          <button
+            onClick={resetSandbox}
+            className="px-2.5 py-1 rounded-lg border border-rose-400/40 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 font-mono text-[10px] font-bold transition flex items-center gap-1.5"
+            title="Khởi tạo lại trạng thái Sandbox về Wave 1"
+          >
+            <span>↺</span>
+            <span>RESET SANDBOX</span>
+          </button>
+
+          {/* God Mode Toggle */}
+          <button
+            onClick={toggleGodMode}
+            className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold transition flex items-center gap-1.5 ${
+              godMode
+                ? "border-amber-400 bg-amber-400/20 text-[#ffc857] shadow-[0_0_15px_rgba(255,200,87,0.5)]"
+                : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+            }`}
+          >
+            <span>🛡</span>
+            <span>GOD MODE: {godMode ? "ON" : "OFF"}</span>
+          </button>
+
+          {/* Auto-Pilot Bot Toggle */}
+          <button
+            onClick={toggleAutoPilot}
+            className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold transition flex items-center gap-1.5 ${
+              autoPilot
+                ? "border-cyan-300 bg-cyan-300/20 text-cyan shadow-[0_0_15px_rgba(85,244,255,0.5)] animate-pulse"
+                : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+            }`}
+          >
+            <span>🤖</span>
+            <span>AUTO-PILOT: {autoPilot ? "RUNNING" : "OFF"}</span>
+          </button>
+
+          {/* Quick Settings */}
+          <button
+            onClick={openSettings}
+            className="px-2.5 py-1 rounded-lg border border-white/15 bg-white/5 text-slate-300 hover:bg-white/15 font-mono text-[10px]"
+          >
+            ⚙ Âm Thanh
+          </button>
+        </div>
+      </div>
+
+      {/* Main Grid: Left is Pixi Battle Viewport, Right is Dev Control Panel */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3">
+        {/* Left: Canvas & Click-to-Kill HUD */}
+        <div className="relative flex flex-col h-full rounded-2xl overflow-hidden border border-cyan-300/30 bg-[#070a12]">
+          <div className="absolute top-2 left-3 z-20 pointer-events-none flex gap-2">
+            <span className="font-mono text-[9px] text-cyan bg-black/60 px-2 py-0.5 rounded border border-cyan-300/30">
+              CLICK VÀO QUÁI ĐỂ BẮN HẠ (CLICK-TO-KILL)
+            </span>
+            <span className="font-mono text-[9px] text-[#ffc857] bg-black/60 px-2 py-0.5 rounded border border-amber-300/30">
+              WAVE {wave} · MÁU: {hp}/{maxHp}
+            </span>
+          </div>
+
+          <PixiBattleCanvas />
+        </div>
+
+        {/* Right: Master Dev Control Deck */}
+        <div className="flex flex-col gap-2.5 overflow-y-auto pr-1">
+          {/* 1. Wave & Boss Testing Deck */}
+          <Panel className="p-3 border-cyan-300/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-cyan font-bold tracking-widest uppercase">1. QUẢN LÝ LÀN SÓNG & BOSS</span>
+              <span className="font-mono text-[9px] text-slate-400">WAVE {wave}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              <button
+                onClick={triggerWaveClear}
+                className="px-2 py-1.5 rounded-lg border border-cyan-300/50 bg-cyan-300/15 hover:bg-cyan-300/25 font-mono text-[10px] font-bold text-cyan transition text-left"
+              >
+                ⚡ Clear Wave Ngay
+              </button>
+              <button
+                onClick={spawnBossInstantly}
+                className="px-2 py-1.5 rounded-lg border border-rose-400/50 bg-rose-500/15 hover:bg-rose-500/25 font-mono text-[10px] font-bold text-rose-300 transition text-left"
+              >
+                👾 Spawn Boss 2.6x
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/5">
+              <span className="font-mono text-[9px] text-slate-400 whitespace-nowrap">Nhảy Wave:</span>
+              {[1, 3, 5, 10, 15, 20].map((w) => (
+                <button
+                  key={w}
+                  onClick={() => jumpToWave(w)}
+                  className={`px-2 py-1 rounded font-mono text-[9px] border transition ${
+                    wave === w
+                      ? "border-cyan-300 bg-cyan-300 text-black font-bold"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/15"
+                  }`}
+                >
+                  W{w}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-1.5 mt-2">
+              <button
+                onClick={forceAugmentDraft}
+                className="flex-1 px-2 py-1 rounded border border-violet-400/40 bg-violet-400/10 hover:bg-violet-400/20 font-mono text-[9px] text-[#c3a6ff]"
+              >
+                ✨ Mở Chọn Lõi (Augment)
+              </button>
+              <button
+                onClick={() => startMatch("endless")}
+                className="px-2 py-1 rounded border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300"
+              >
+                🚀 Chạy Intro
+              </button>
+            </div>
+          </Panel>
+
+          {/* 2. Loot & Drop Mechanics */}
+          <Panel className="p-3 border-amber-300/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-[#ffc857] font-bold tracking-widest uppercase">2. TEST RƠI VẬT PHẨM & CREDITS</span>
+              <span className="font-mono text-[9px] text-[#ffc857]">◉ {creditsEarned}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                onClick={() => triggerLootBurst(10)}
+                className="px-2 py-1.5 rounded-lg border border-amber-300/40 bg-amber-300/10 hover:bg-amber-300/20 font-mono text-[9px] font-bold text-[#ffc857] text-left"
+              >
+                💎 Rơi 10x Credits Gems
+              </button>
+              <button
+                onClick={() => {
+                  useAirDefenseStore.getState().spawnLoot(50, 40, true);
+                }}
+                className="px-2 py-1.5 rounded-lg border border-amber-300/40 bg-amber-300/10 hover:bg-amber-300/20 font-mono text-[9px] font-bold text-[#ffc857] text-left"
+              >
+                ⭐ Bung Nổ Kho Báu Boss
+              </button>
+              <button
+                onClick={() => addCredits(5000)}
+                className="px-2 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300 text-left"
+              >
+                💰 +5,000 Credits
+              </button>
+              <button
+                onClick={maxHyperBeam}
+                className="px-2 py-1.5 rounded-lg border border-violet-400/40 bg-violet-400/10 hover:bg-violet-400/20 font-mono text-[9px] font-bold text-[#c3a6ff] text-left"
+              >
+                ⚡ 100% Hyper Beam
+              </button>
+            </div>
+          </Panel>
+
+          {/* 3. Player Health & Simulation Speed */}
+          <Panel className="p-3 border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-slate-300 font-bold tracking-widest uppercase">3. MÁU & TỐC ĐỘ SIMULATION</span>
+              <span className="font-mono text-[9px] text-cyan">{gameTimeScale}x TỐC ĐỘ</span>
+            </div>
+
+            <div className="flex gap-1.5 mb-2">
+              {[0, 0.5, 1.0, 2.0, 4.0].map((scale) => (
+                <button
+                  key={scale}
+                  onClick={() => setGameTimeScale(scale)}
+                  className={`flex-1 py-1 rounded font-mono text-[9px] border transition ${
+                    gameTimeScale === scale
+                      ? "border-cyan-300 bg-cyan-300/20 text-cyan font-bold"
+                      : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+                  }`}
+                >
+                  {scale === 0 ? "⏸ Freeze" : `${scale}x`}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => healPlayer(50)}
+                className="flex-1 px-2 py-1 rounded border border-cyan-300/30 bg-cyan-300/10 hover:bg-cyan-300/20 font-mono text-[9px] text-cyan"
+              >
+                ✚ Hồi +50 HP
+              </button>
+              <button
+                onClick={() => damagePlayer(25)}
+                className="flex-1 px-2 py-1 rounded border border-rose-400/30 bg-rose-500/10 hover:bg-rose-500/20 font-mono text-[9px] text-rose-300"
+              >
+                💔 Trừ -25 HP
+              </button>
+            </div>
+          </Panel>
+
+          {/* 4. Active Targets List with 1-Click Kill (No Japanese needed) */}
+          <Panel className="p-3 border-white/10 flex-1 flex flex-col min-h-48">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-slate-300 font-bold tracking-widest uppercase">4. DANH SÁCH QUÁI ĐANG BAY ({targets.filter((t) => !t.isDead).length})</span>
+              <span className="font-mono text-[8px] text-slate-500">BẤM NÚT ĐỂ DIỆT</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto divide-y divide-white/5 pr-1 max-h-52">
+              {targets.filter((t) => !t.isDead).length === 0 ? (
+                <p className="font-mono text-[10px] text-slate-500 text-center py-4">Không có quái vật nào trên màn hình</p>
+              ) : (
+                targets
+                  .filter((t) => !t.isDead)
+                  .map((t, idx) => (
+                    <div key={t.id} className="flex items-center justify-between py-1.5 gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-display text-xs font-bold text-cyan">{t.word}</span>
+                          <span className="font-mono text-[9px] text-slate-300">({t.reading})</span>
+                          {t.type === "MINI_BOSS" && <Pill tone="rose">BOSS HP: {t.currentHp}</Pill>}
+                        </div>
+                        <p className="font-mono text-[8px] text-slate-400 truncate">Nghĩa: {t.meaning} · Y: {Math.round(t.posY)}%</p>
+                      </div>
+
+                      <button
+                        onClick={() => killTargetById(t.id)}
+                        className="shrink-0 px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/40 border border-rose-400/40 font-mono text-[9px] font-bold text-rose-300 transition"
+                      >
+                        ⚡ Diệt ({idx + 1})
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const { screen, setScreen, creditsBalance } = useAirDefenseStore();
+  const { screen, setScreen, creditsBalance, bgmEnabled, toggleBgm, isSettingsOpen, closeSettings, openSettings } = useAirDefenseStore();
 
   const content: Record<Screen, ReactNode> = {
     deck: <Deck />,
@@ -733,7 +1267,9 @@ export default function App() {
     pvp: <Battle isPvP />,
     augment: <AugmentDraft />,
     debrief: <Debrief />,
-    rank: <RankArchive />
+    rank: <RankArchive />,
+    settings: <AudioSettingsView />,
+    sandbox: <DevSandboxView />
   };
 
   return (
@@ -764,8 +1300,24 @@ export default function App() {
           ))}
         </nav>
 
+        {/* Audio / BGM Toggle */}
+        <div className="mt-2 border-t border-white/10 pt-2">
+          <button
+            onClick={toggleBgm}
+            className={`w-full flex min-h-8 items-center gap-2 rounded-xl px-2.5 text-left transition font-mono text-[10px] ${
+              bgmEnabled
+                ? "text-cyan bg-cyan-300/10 border border-cyan-300/30"
+                : "text-slate-500 bg-white/5 border border-white/10"
+            }`}
+            title="Bật/Tắt Nhạc Nền Tự Động"
+          >
+            <span>{bgmEnabled ? "♫" : "🔇"}</span>
+            <span className="hidden lg:block">{bgmEnabled ? "BGM: ON" : "BGM: OFF"}</span>
+          </button>
+        </div>
+
         {/* Return to Arena Hub Button */}
-        <div className="mt-4 border-t border-white/10 pt-3">
+        <div className="mt-2 border-t border-white/10 pt-2">
           <a
             href="/games"
             className="flex min-h-10 items-center gap-2.5 rounded-xl border border-rose-400/40 bg-rose-500/10 px-2.5 text-rose-300 transition hover:bg-rose-500/20 hover:border-rose-400"
@@ -788,6 +1340,15 @@ export default function App() {
       <main className="flex-1 h-screen overflow-hidden p-4 sm:p-5 lg:p-6 min-w-0">
         {content[screen]}
       </main>
+
+      {/* Quick Audio Settings Modal Overlay (Accessible during Battle) */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-cyan-300/40 bg-[#070d1a] shadow-[0_0_50px_rgba(85,244,255,0.25)] p-5">
+            <AudioSettingsView isModal onClose={closeSettings} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
