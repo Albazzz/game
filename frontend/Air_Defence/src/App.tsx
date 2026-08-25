@@ -721,7 +721,7 @@ function Header({ eyebrow, title, detail }: { eyebrow: string; title: string; de
 }
 
 export default function App() {
-  const { screen, setScreen, creditsBalance } = useAirDefenseStore();
+  const { screen, setScreen, creditsBalance, bgmEnabled, toggleBgm } = useAirDefenseStore();
 
   const content: Record<Screen, ReactNode> = {
     deck: <Deck />,
