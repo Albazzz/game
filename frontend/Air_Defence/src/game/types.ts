@@ -1,4 +1,4 @@
-export type Screen = "deck" | "hangar" | "talent" | "shop" | "queue" | "endless" | "pvp" | "augment" | "debrief" | "rank";
+export type Screen = "deck" | "hangar" | "talent" | "shop" | "queue" | "endless" | "pvp" | "augment" | "debrief" | "rank" | "settings";
 
 export type GameMode = "endless" | "pvp";
 
@@ -68,4 +68,14 @@ export interface ShipDef {
   colorTheme: "cyan" | "violet" | "amber";
   spritePath: string;
   passiveDesc: string;
+}
+
+export interface AudioSettings {
+  masterEnabled: boolean;
+  masterVolume: number;     // 0 -> 100
+  bgmEnabled: boolean;
+  bgmVolume: number;        // 0 -> 100
+  sfxEnabled: boolean;
+  sfxVolume: number;        // 0 -> 100
+  keystrokeEnabled: boolean;
 }

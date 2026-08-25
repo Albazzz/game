@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { AugmentCard, FloatingText, GameMode, LootItem, LootItemType, Screen, TargetWord, WeakWord } from "./types";
+import { AugmentCard, AudioSettings, FloatingText, GameMode, LootItem, LootItemType, Screen, TargetWord, WeakWord } from "./types";
 import { GAME_CONFIG } from "./gameConfig";
 import { soundManager } from "./soundEffects";
 
@@ -215,8 +215,13 @@ interface AirDefenseState {
   isTransitioning: boolean;
   introState: MatchIntroState;
   bgmEnabled: boolean;
+  isSettingsOpen: boolean;
+  audioSettings: AudioSettings;
 
   setScreen: (screen: Screen) => void;
+  openSettings: () => void;
+  closeSettings: () => void;
+  updateAudioSettings: (settings: Partial<AudioSettings>) => void;
   startMatch: (mode: GameMode) => void;
   skipIntro: () => void;
   toggleBgm: () => void;
@@ -280,12 +285,26 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     active: false,
     phase: "done"
   },
-  bgmEnabled: true,
+  bgmEnabled: soundManager.getSettings().bgmEnabled && soundManager.getSettings().masterEnabled,
+  isSettingsOpen: false,
+  audioSettings: soundManager.getSettings(),
+
+  openSettings: () => set({ isSettingsOpen: true }),
+  closeSettings: () => set({ isSettingsOpen: false }),
+
+  updateAudioSettings: (newSettings) => {
+    soundManager.updateSettings(newSettings);
+    const updated = soundManager.getSettings();
+    set({
+      audioSettings: updated,
+      bgmEnabled: updated.bgmEnabled && updated.masterEnabled
+    });
+  },
 
   setScreen: (screen) => {
     set({ screen });
     // Contextual BGM Switching
-    if (["deck", "hangar", "talent", "shop", "queue", "rank", "debrief"].includes(screen)) {
+    if (["deck", "hangar", "talent", "shop", "queue", "rank", "debrief", "settings"].includes(screen)) {
       soundManager.switchBgm("lobby");
     } else if (screen === "endless" || screen === "pvp") {
       const isBoss = get().inboundBoss;
@@ -296,18 +315,9 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   },
 
   toggleBgm: () => {
-    const next = !get().bgmEnabled;
-    set({ bgmEnabled: next });
-    if (!next) {
-      soundManager.stopBgm();
-    } else {
-      const scr = get().screen;
-      if (["deck", "hangar", "talent", "shop", "queue", "rank", "debrief", "augment"].includes(scr)) {
-        soundManager.switchBgm("lobby");
-      } else {
-        soundManager.switchBgm(get().inboundBoss ? "boss" : "battle");
-      }
-    }
+    const curr = get().audioSettings;
+    const nextBgm = !curr.bgmEnabled;
+    get().updateAudioSettings({ bgmEnabled: nextBgm });
   },
 
   startMatch: (mode) => {
