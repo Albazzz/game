@@ -679,16 +679,6 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
                 </h2>
               </div>
             )}
-
-            {/* Skip Intro Button */}
-            <div className="mt-6">
-              <button
-                onClick={skipIntro}
-                className="pointer-events-auto px-4 py-1.5 rounded-full border border-white/20 bg-white/5 font-mono text-[10px] text-slate-300 hover:bg-white/15 hover:text-white transition"
-              >
-                BỎ QUA INTRO [ESC] →
-              </button>
-            </div>
           </div>
         </div>
       )}
