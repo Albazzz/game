@@ -56,7 +56,7 @@ export const AUGMENTS_POOL: AugmentCard[] = [
   }
 ];
 
-const EXTENDED_VOCABULARY = [
+export const EXTENDED_VOCABULARY = [
   { word: "学校", reading: "がっこう", meaning: "trường học" },
   { word: "先生", reading: "せんせい", meaning: "giáo viên" },
   { word: "学生", reading: "がくせい", meaning: "học sinh" },
@@ -89,7 +89,7 @@ const EXTENDED_VOCABULARY = [
   { word: "夢", reading: "ゆめ", meaning: "ước mơ" }
 ];
 
-const BOSS_VOCABULARY = [
+export const BOSS_VOCABULARY = [
   { word: "侵略者", reading: "しんりゃくしゃ", meaning: "kẻ xâm lăng" },
   { word: "破壊神", reading: "はかいしん", meaning: "thần hủy diệt" },
   { word: "超新星", reading: "ちょうしんせい", meaning: "siêu tân tinh" },
@@ -97,7 +97,7 @@ const BOSS_VOCABULARY = [
   { word: "絶対零度", reading: "ぜったいれいど", meaning: "độ không tuyệt đối" }
 ];
 
-function generateWave(wave: number): TargetWord[] {
+export function generateWave(wave: number): TargetWord[] {
   const isBossWave = wave % GAME_CONFIG.ENEMIES.bossEveryNWaves === 0;
   const rawCount = Math.min(
     GAME_CONFIG.ENEMIES.maxEnemyCount,
@@ -218,6 +218,11 @@ interface AirDefenseState {
   isSettingsOpen: boolean;
   audioSettings: AudioSettings;
 
+  // 🛠 DEV SANDBOX & TOOLSUITE STATE
+  godMode: boolean;
+  autoPilot: boolean;
+  gameTimeScale: number;
+
   setScreen: (screen: Screen) => void;
   openSettings: () => void;
   closeSettings: () => void;
@@ -236,7 +241,24 @@ interface AirDefenseState {
   tickGameLoop: (delta: number) => void;
   advanceToNextWave: () => void;
   spawnLoot: (x: number, y: number, isBoss?: boolean) => void;
+
+  // 🛠 DEV SANDBOX ACTIONS
+  toggleGodMode: () => void;
+  toggleAutoPilot: () => void;
+  setGameTimeScale: (scale: number) => void;
+  killTargetById: (id: string) => void;
+  jumpToWave: (targetWave: number) => void;
+  spawnBossInstantly: () => void;
+  forceAugmentDraft: () => void;
+  triggerLootBurst: (count?: number) => void;
+  addCredits: (amount: number) => void;
+  maxHyperBeam: () => void;
+  healPlayer: (amount?: number) => void;
+  damagePlayer: (amount?: number) => void;
+  triggerWaveClear: () => void;
 }
+
+let autoPilotCounter = 0;
 
 export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   screen: "deck",
@@ -289,6 +311,11 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   isSettingsOpen: false,
   audioSettings: soundManager.getSettings(),
 
+  // DEV DEFAULTS
+  godMode: false,
+  autoPilot: false,
+  gameTimeScale: 1.0,
+
   openSettings: () => set({ isSettingsOpen: true }),
   closeSettings: () => set({ isSettingsOpen: false }),
 
@@ -304,7 +331,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   setScreen: (screen) => {
     set({ screen });
     // Contextual BGM Switching
-    if (["deck", "hangar", "talent", "shop", "queue", "rank", "debrief", "settings"].includes(screen)) {
+    if (["deck", "hangar", "talent", "shop", "queue", "rank", "debrief", "settings", "sandbox"].includes(screen)) {
       soundManager.switchBgm("lobby");
     } else if (screen === "endless" || screen === "pvp") {
       const isBoss = get().inboundBoss;
@@ -326,7 +353,6 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     const initialHp = ship.hp + talentLevels.hull * GAME_CONFIG.TALENTS.hullBonusPerLevel;
     const initialTargets = generateWave(1);
 
-    // Trigger Match Launch Audio & Switch BGM
     soundManager.playIntroLaunch();
     soundManager.switchBgm("battle");
 
@@ -366,7 +392,6 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       }
     });
 
-    // 3-Stage Cinematic Match Intro
     setTimeout(() => {
       if (get().introState.active) {
         set({ introState: { active: true, phase: "warpin" } });
@@ -431,12 +456,11 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
 
   advanceToNextWave: () => {
     const { wave, score, isTransitioning, screen } = get();
-    if (isTransitioning || (screen !== "endless" && screen !== "pvp")) return;
+    if (isTransitioning || (screen !== "endless" && screen !== "pvp" && screen !== "sandbox")) return;
 
     const nextWave = wave + 1;
     const isBossNext = nextWave % GAME_CONFIG.ENEMIES.bossEveryNWaves === 0;
 
-    // 1. Trigger Wave Clear Phase
     soundManager.playWaveClear();
     set({
       isTransitioning: true,
@@ -450,7 +474,6 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       }
     });
 
-    // 2. Warp Speed Phase
     setTimeout(() => {
       soundManager.playWarpDrive();
       set({
@@ -464,11 +487,10 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       });
     }, 900);
 
-    // 3. Incoming Wave / Boss Warning Phase
     setTimeout(() => {
       if (isBossNext) {
         soundManager.playBossSiren();
-        soundManager.switchBgm("boss"); // Switch to intense dark boss BGM!
+        soundManager.switchBgm("boss");
       } else {
         soundManager.switchBgm("battle");
       }
@@ -483,9 +505,8 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       });
     }, 1800);
 
-    // 4. Finalize Transition & Check Augment Draft
     setTimeout(() => {
-      if (wave % GAME_CONFIG.ENEMIES.augmentDraftInterval === 0) {
+      if (wave % GAME_CONFIG.ENEMIES.augmentDraftInterval === 0 && screen !== "sandbox") {
         const draft = [...AUGMENTS_POOL].sort(() => 0.5 - Math.random()).slice(0, 3);
         soundManager.switchBgm("lobby");
         set({
@@ -529,7 +550,6 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       const updatedTargets = [...targets];
       let isKilled = true;
 
-      // Check if Boss has multiple HP
       if (hit.type === "MINI_BOSS" && (hit.currentHp || 1) > 1) {
         const remainingHp = (hit.currentHp || 1) - 1;
         updatedTargets[targetIdx] = { ...hit, currentHp: remainingHp };
@@ -557,11 +577,9 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         creditDelta = Math.round(creditDelta * GAME_CONFIG.SCORING.goldMagnetCoinBonus);
       }
 
-      // Audio SFX trigger
       soundManager.playLaser();
       if (isKilled) {
         setTimeout(() => soundManager.playExplosion(), 80);
-        // Spawn loot items at destroyed position
         spawnLoot(hit.posX, Math.max(10, hit.posY), hit.type === "MINI_BOSS");
       }
       soundManager.playComboDing(newCombo);
@@ -581,7 +599,6 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         set({ lastLaserTarget: null, screenShake: false });
       }, GAME_CONFIG.VISUALS.laserBeamDurationMs);
 
-      // Check if all targets are destroyed
       const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
       if (aliveLeft === 0) {
         advanceToNextWave();
@@ -589,7 +606,6 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
 
       return true;
     } else {
-      // Miss / Incorrect
       set({ combo: 0 });
       return false;
     }
@@ -703,13 +719,158 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     });
   },
 
+  // ==========================================================================
+  // 🛠 DEV SANDBOX & QUICK-TEST ACTION METHODS
+  // ==========================================================================
+  toggleGodMode: () => set((s) => ({ godMode: !s.godMode })),
+  toggleAutoPilot: () => set((s) => ({ autoPilot: !s.autoPilot })),
+  setGameTimeScale: (scale) => set({ gameTimeScale: scale }),
+
+  killTargetById: (id: string) => {
+    const { targets, score, combo, bestCombo, creditsEarned, wave, hyperBeamCharge, activeAugments, isTransitioning, advanceToNextWave, spawnLoot } = get();
+    if (isTransitioning) return;
+    const targetIdx = targets.findIndex((t) => t.id === id && !t.isDead);
+    if (targetIdx < 0) return;
+
+    const hit = targets[targetIdx];
+    const updatedTargets = [...targets];
+    let isKilled = true;
+
+    if (hit.type === "MINI_BOSS" && (hit.currentHp || 1) > 1) {
+      const remainingHp = (hit.currentHp || 1) - 1;
+      updatedTargets[targetIdx] = { ...hit, currentHp: remainingHp };
+      isKilled = false;
+    } else {
+      updatedTargets[targetIdx] = { ...hit, isDead: true };
+    }
+
+    const newCombo = combo + 1;
+    const newBest = Math.max(bestCombo, newCombo);
+
+    let scoreDelta = (GAME_CONFIG.SCORING.baseScorePerTarget + newCombo * (GAME_CONFIG.SCORING.baseScorePerTarget * GAME_CONFIG.SCORING.comboBonusMultiplier)) * wave;
+    if (hit.type === "MINI_BOSS" && isKilled) {
+      scoreDelta += GAME_CONFIG.SCORING.bossScoreBonus;
+    }
+    if (activeAugments.some((a) => a.id === "DUAL_CANNON")) {
+      scoreDelta = Math.round(scoreDelta * GAME_CONFIG.SCORING.dualCannonScoreBonus);
+    }
+
+    let creditDelta = GAME_CONFIG.SCORING.baseCreditsPerTarget + wave * GAME_CONFIG.SCORING.creditsWaveMultiplier;
+    if (hit.type === "MINI_BOSS" && isKilled) {
+      creditDelta += GAME_CONFIG.SCORING.bossCreditsBonus;
+    }
+    if (activeAugments.some((a) => a.id === "GOLD_MAGNET")) {
+      creditDelta = Math.round(creditDelta * GAME_CONFIG.SCORING.goldMagnetCoinBonus);
+    }
+
+    soundManager.playLaser();
+    if (isKilled) {
+      setTimeout(() => soundManager.playExplosion(), 80);
+      spawnLoot(hit.posX, Math.max(10, hit.posY), hit.type === "MINI_BOSS");
+    }
+    soundManager.playComboDing(newCombo);
+
+    set({
+      targets: updatedTargets,
+      score: Math.round(score + scoreDelta),
+      combo: newCombo,
+      bestCombo: newBest,
+      creditsEarned: creditsEarned + creditDelta,
+      hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + GAME_CONFIG.PLAYER.hyperBeamChargePerHit),
+      lastLaserTarget: { x: hit.posX, y: Math.max(5, hit.posY) },
+      screenShake: hit.type === "MINI_BOSS"
+    });
+
+    setTimeout(() => {
+      set({ lastLaserTarget: null, screenShake: false });
+    }, GAME_CONFIG.VISUALS.laserBeamDurationMs);
+
+    const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
+    if (aliveLeft === 0) {
+      advanceToNextWave();
+    }
+  },
+
+  jumpToWave: (targetWave) => {
+    const nextTargets = generateWave(targetWave);
+    const isBoss = targetWave % GAME_CONFIG.ENEMIES.bossEveryNWaves === 0;
+    soundManager.switchBgm(isBoss ? "boss" : "battle");
+    set({
+      wave: targetWave,
+      targets: nextTargets,
+      inboundBoss: isBoss,
+      isTransitioning: false,
+      waveTransition: { active: false, phase: "none", clearedWave: 0, incomingWave: targetWave, isBoss }
+    });
+  },
+
+  spawnBossInstantly: () => {
+    const { targets, wave } = get();
+    const bossVocab = BOSS_VOCABULARY[0];
+    const bossTarget: TargetWord = {
+      id: `boss-dev-${Date.now()}`,
+      word: bossVocab.word,
+      reading: bossVocab.reading,
+      meaning: bossVocab.meaning,
+      posX: 50,
+      posY: 5,
+      speed: (GAME_CONFIG.ENEMIES.baseSpeed + wave * GAME_CONFIG.ENEMIES.speedWaveMultiplier) * GAME_CONFIG.ENEMIES.bossSpeedMult,
+      type: "MINI_BOSS",
+      maxHp: GAME_CONFIG.ENEMIES.bossHp,
+      currentHp: GAME_CONFIG.ENEMIES.bossHp
+    };
+    soundManager.playBossSiren();
+    soundManager.switchBgm("boss");
+    set({
+      targets: [bossTarget, ...targets],
+      inboundBoss: true
+    });
+  },
+
+  forceAugmentDraft: () => {
+    const draft = [...AUGMENTS_POOL].sort(() => 0.5 - Math.random()).slice(0, 3);
+    soundManager.switchBgm("lobby");
+    set({
+      screen: "augment",
+      draftAugments: draft
+    });
+  },
+
+  triggerLootBurst: (count = 8) => {
+    for (let i = 0; i < count; i++) {
+      get().spawnLoot(50 + (Math.random() * 40 - 20), 30 + Math.random() * 20);
+    }
+  },
+
+  addCredits: (amt) => set((s) => ({ creditsEarned: s.creditsEarned + amt, creditsBalance: s.creditsBalance + amt })),
+  maxHyperBeam: () => set({ hyperBeamCharge: 100 }),
+  healPlayer: (amt = 50) => set((s) => ({ hp: Math.min(s.maxHp, s.hp + amt) })),
+  damagePlayer: (amt = 25) => set((s) => ({ hp: Math.max(1, s.hp - amt), dangerZoneActive: true })),
+  triggerWaveClear: () => get().advanceToNextWave(),
+
   tickGameLoop: (delta) => {
-    const { targets, lootItems, floatingTexts, hp, maxHp, shield, creditsEarned, hyperBeamCharge, screen, weakWords, isTransitioning, advanceToNextWave, introState } = get();
-    if (screen !== "endless" && screen !== "pvp") return;
-    if (introState.active) return; // Wait during intro
+    const { targets, lootItems, floatingTexts, hp, maxHp, shield, creditsEarned, hyperBeamCharge, screen, weakWords, isTransitioning, advanceToNextWave, introState, godMode, autoPilot, gameTimeScale, killTargetById } = get();
+    if (screen !== "endless" && screen !== "pvp" && screen !== "sandbox") return;
+    if (introState.active) return;
+
+    const effectiveDelta = delta * gameTimeScale;
+
+    // Auto-Pilot Bot (Plays on behalf of developer)
+    if (autoPilot && !isTransitioning) {
+      autoPilotCounter += effectiveDelta;
+      if (autoPilotCounter > 45) { // every ~0.75s
+        autoPilotCounter = 0;
+        const lowestTarget = [...targets]
+          .filter((t) => !t.isDead && t.posY >= 0)
+          .sort((a, b) => b.posY - a.posY)[0];
+        if (lowestTarget) {
+          killTargetById(lowestTarget.id);
+        }
+      }
+    }
 
     // 1. Tick Enemy Movement & Collisions
-    if (!isTransitioning) {
+    if (!isTransitioning && gameTimeScale > 0) {
       let hasDanger = false;
       let damageTaken = 0;
       const remainingTargets: TargetWord[] = [];
@@ -718,13 +879,15 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       targets.forEach((t) => {
         if (t.isDead) return;
 
-        const newY = t.posY + t.speed * delta;
+        const newY = t.posY + t.speed * effectiveDelta;
         if (newY >= GAME_CONFIG.PLAYER.dangerZoneThreshold) {
           hasDanger = true;
         }
 
         if (newY >= 100) {
-          damageTaken += t.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.damagePerEnemyReachBottom * 2 : GAME_CONFIG.PLAYER.damagePerEnemyReachBottom;
+          if (!godMode) {
+            damageTaken += t.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.damagePerEnemyReachBottom * 2 : GAME_CONFIG.PLAYER.damagePerEnemyReachBottom;
+          }
           missedList.push({
             word: t.word,
             reading: t.reading,
@@ -736,7 +899,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         }
       });
 
-      if (damageTaken > 0) {
+      if (damageTaken > 0 && !godMode) {
         soundManager.playDamage();
         let nextShield = shield;
         let nextHp = hp;
@@ -778,7 +941,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     }
 
     // 2. Tick Loot Items Movement & Magnetic Absorption
-    if (lootItems.length > 0) {
+    if (lootItems.length > 0 && gameTimeScale > 0) {
       const playerX = 50;
       const playerY = 85;
       const nextLoot: LootItem[] = [];
@@ -790,27 +953,23 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       lootItems.forEach((item) => {
         if (item.collected) return;
 
-        let nx = item.x + item.vx * delta;
-        let ny = item.y + item.vy * delta;
+        let nx = item.x + item.vx * effectiveDelta;
+        let ny = item.y + item.vy * effectiveDelta;
 
-        // Friction on initial burst velocity
         item.vx *= 0.94;
-        item.vy = Math.min(1.2, item.vy + 0.02 * delta); // gentle downward gravity
+        item.vy = Math.min(1.2, item.vy + 0.02 * effectiveDelta);
 
-        // Magnetic Attraction
         const dx = playerX - nx;
         const dy = playerY - ny;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < GAME_CONFIG.LOOT.magnetDistance || ny > 60) {
-          const pull = (GAME_CONFIG.LOOT.magnetSpeed * (1 - dist / 100) + 0.12) * delta;
+          const pull = (GAME_CONFIG.LOOT.magnetSpeed * (1 - dist / 100) + 0.12) * effectiveDelta;
           nx += (dx / dist) * pull * 4;
           ny += (dy / dist) * pull * 4;
         }
 
-        // Pickup Collision Check
         if (dist < 7 || ny >= 88) {
-          // Collected!
           soundManager.playItemCollect(item.type);
 
           if (item.type === "CREDIT_CRYSTAL") {

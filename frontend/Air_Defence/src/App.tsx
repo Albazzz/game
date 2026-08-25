@@ -12,7 +12,8 @@ const nav: { id: Screen; icon: string; label: string }[] = [
   { id: "shop", icon: "◉", label: "Supply Dock" },
   { id: "queue", icon: "⌁", label: "Match Queue" },
   { id: "rank", icon: "▤", label: "Rank Archive" },
-  { id: "settings", icon: "⚙", label: "Audio & System" }
+  { id: "settings", icon: "⚙", label: "Audio & System" },
+  { id: "sandbox", icon: "🛠", label: "Dev Sandbox" }
 ];
 
 function Stat({ label, value, tone = "cyan" }: { label: string; value: string | number; tone?: "cyan" | "amber" | "violet" | "rose" }) {
@@ -975,6 +976,273 @@ function AudioSettingsView({ isModal = false, onClose }: { isModal?: boolean; on
   );
 }
 
+function DevSandboxView() {
+  const {
+    wave,
+    hp,
+    maxHp,
+    score,
+    combo,
+    creditsEarned,
+    hyperBeamCharge,
+    targets,
+    godMode,
+    autoPilot,
+    gameTimeScale,
+    toggleGodMode,
+    toggleAutoPilot,
+    setGameTimeScale,
+    jumpToWave,
+    spawnBossInstantly,
+    forceAugmentDraft,
+    triggerLootBurst,
+    addCredits,
+    maxHyperBeam,
+    healPlayer,
+    damagePlayer,
+    triggerWaveClear,
+    killTargetById,
+    startMatch,
+    openSettings
+  } = useAirDefenseStore();
+
+  return (
+    <div className="h-full flex flex-col justify-between overflow-hidden gap-3">
+      {/* Top Sandbox Header & Telemetry */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+        <div className="flex items-center gap-3">
+          <Pill tone="amber">🛠 DEVELOPER SANDBOX // NO-JAPANESE MODE</Pill>
+          <h1 className="font-display text-lg sm:text-xl font-bold text-white">
+            Phòng Thí Nghiệm & Bảng Điều Khiển Dev
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* God Mode Toggle */}
+          <button
+            onClick={toggleGodMode}
+            className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold transition flex items-center gap-1.5 ${
+              godMode
+                ? "border-amber-400 bg-amber-400/20 text-[#ffc857] shadow-[0_0_15px_rgba(255,200,87,0.5)]"
+                : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+            }`}
+          >
+            <span>🛡</span>
+            <span>GOD MODE: {godMode ? "ON" : "OFF"}</span>
+          </button>
+
+          {/* Auto-Pilot Bot Toggle */}
+          <button
+            onClick={toggleAutoPilot}
+            className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold transition flex items-center gap-1.5 ${
+              autoPilot
+                ? "border-cyan-300 bg-cyan-300/20 text-cyan shadow-[0_0_15px_rgba(85,244,255,0.5)] animate-pulse"
+                : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+            }`}
+          >
+            <span>🤖</span>
+            <span>AUTO-PILOT: {autoPilot ? "RUNNING" : "OFF"}</span>
+          </button>
+
+          {/* Quick Settings */}
+          <button
+            onClick={openSettings}
+            className="px-2.5 py-1 rounded-lg border border-white/15 bg-white/5 text-slate-300 hover:bg-white/15 font-mono text-[10px]"
+          >
+            ⚙ Âm Thanh
+          </button>
+        </div>
+      </div>
+
+      {/* Main Grid: Left is Pixi Battle Viewport, Right is Dev Control Panel */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3">
+        {/* Left: Canvas & Click-to-Kill HUD */}
+        <div className="relative flex flex-col h-full rounded-2xl overflow-hidden border border-cyan-300/30 bg-[#070a12]">
+          <div className="absolute top-2 left-3 z-20 pointer-events-none flex gap-2">
+            <span className="font-mono text-[9px] text-cyan bg-black/60 px-2 py-0.5 rounded border border-cyan-300/30">
+              CLICK VÀO QUÁI ĐỂ BẮN HẠ (CLICK-TO-KILL)
+            </span>
+            <span className="font-mono text-[9px] text-[#ffc857] bg-black/60 px-2 py-0.5 rounded border border-amber-300/30">
+              WAVE {wave} · MÁU: {hp}/{maxHp}
+            </span>
+          </div>
+
+          <PixiBattleCanvas />
+        </div>
+
+        {/* Right: Master Dev Control Deck */}
+        <div className="flex flex-col gap-2.5 overflow-y-auto pr-1">
+          {/* 1. Wave & Boss Testing Deck */}
+          <Panel className="p-3 border-cyan-300/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-cyan font-bold tracking-widest uppercase">1. QUẢN LÝ LÀN SÓNG & BOSS</span>
+              <span className="font-mono text-[9px] text-slate-400">WAVE {wave}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              <button
+                onClick={triggerWaveClear}
+                className="px-2 py-1.5 rounded-lg border border-cyan-300/50 bg-cyan-300/15 hover:bg-cyan-300/25 font-mono text-[10px] font-bold text-cyan transition text-left"
+              >
+                ⚡ Clear Wave Ngay
+              </button>
+              <button
+                onClick={spawnBossInstantly}
+                className="px-2 py-1.5 rounded-lg border border-rose-400/50 bg-rose-500/15 hover:bg-rose-500/25 font-mono text-[10px] font-bold text-rose-300 transition text-left"
+              >
+                👾 Spawn Boss 2.6x
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/5">
+              <span className="font-mono text-[9px] text-slate-400 whitespace-nowrap">Nhảy Wave:</span>
+              {[1, 3, 5, 10, 15, 20].map((w) => (
+                <button
+                  key={w}
+                  onClick={() => jumpToWave(w)}
+                  className={`px-2 py-1 rounded font-mono text-[9px] border transition ${
+                    wave === w
+                      ? "border-cyan-300 bg-cyan-300 text-black font-bold"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/15"
+                  }`}
+                >
+                  W{w}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-1.5 mt-2">
+              <button
+                onClick={forceAugmentDraft}
+                className="flex-1 px-2 py-1 rounded border border-violet-400/40 bg-violet-400/10 hover:bg-violet-400/20 font-mono text-[9px] text-[#c3a6ff]"
+              >
+                ✨ Mở Chọn Lõi (Augment)
+              </button>
+              <button
+                onClick={() => startMatch("endless")}
+                className="px-2 py-1 rounded border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300"
+              >
+                🚀 Chạy Intro
+              </button>
+            </div>
+          </Panel>
+
+          {/* 2. Loot & Drop Mechanics */}
+          <Panel className="p-3 border-amber-300/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-[#ffc857] font-bold tracking-widest uppercase">2. TEST RƠI VẬT PHẨM & CREDITS</span>
+              <span className="font-mono text-[9px] text-[#ffc857]">◉ {creditsEarned}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                onClick={() => triggerLootBurst(10)}
+                className="px-2 py-1.5 rounded-lg border border-amber-300/40 bg-amber-300/10 hover:bg-amber-300/20 font-mono text-[9px] font-bold text-[#ffc857] text-left"
+              >
+                💎 Rơi 10x Credits Gems
+              </button>
+              <button
+                onClick={() => {
+                  useAirDefenseStore.getState().spawnLoot(50, 40, true);
+                }}
+                className="px-2 py-1.5 rounded-lg border border-amber-300/40 bg-amber-300/10 hover:bg-amber-300/20 font-mono text-[9px] font-bold text-[#ffc857] text-left"
+              >
+                ⭐ Bung Nổ Kho Báu Boss
+              </button>
+              <button
+                onClick={() => addCredits(5000)}
+                className="px-2 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300 text-left"
+              >
+                💰 +5,000 Credits
+              </button>
+              <button
+                onClick={maxHyperBeam}
+                className="px-2 py-1.5 rounded-lg border border-violet-400/40 bg-violet-400/10 hover:bg-violet-400/20 font-mono text-[9px] font-bold text-[#c3a6ff] text-left"
+              >
+                ⚡ 100% Hyper Beam
+              </button>
+            </div>
+          </Panel>
+
+          {/* 3. Player Health & Simulation Speed */}
+          <Panel className="p-3 border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-slate-300 font-bold tracking-widest uppercase">3. MÁU & TỐC ĐỘ SIMULATION</span>
+              <span className="font-mono text-[9px] text-cyan">{gameTimeScale}x TỐC ĐỘ</span>
+            </div>
+
+            <div className="flex gap-1.5 mb-2">
+              {[0, 0.5, 1.0, 2.0, 4.0].map((scale) => (
+                <button
+                  key={scale}
+                  onClick={() => setGameTimeScale(scale)}
+                  className={`flex-1 py-1 rounded font-mono text-[9px] border transition ${
+                    gameTimeScale === scale
+                      ? "border-cyan-300 bg-cyan-300/20 text-cyan font-bold"
+                      : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+                  }`}
+                >
+                  {scale === 0 ? "⏸ Freeze" : `${scale}x`}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => healPlayer(50)}
+                className="flex-1 px-2 py-1 rounded border border-cyan-300/30 bg-cyan-300/10 hover:bg-cyan-300/20 font-mono text-[9px] text-cyan"
+              >
+                ✚ Hồi +50 HP
+              </button>
+              <button
+                onClick={() => damagePlayer(25)}
+                className="flex-1 px-2 py-1 rounded border border-rose-400/30 bg-rose-500/10 hover:bg-rose-500/20 font-mono text-[9px] text-rose-300"
+              >
+                💔 Trừ -25 HP
+              </button>
+            </div>
+          </Panel>
+
+          {/* 4. Active Targets List with 1-Click Kill (No Japanese needed) */}
+          <Panel className="p-3 border-white/10 flex-1 flex flex-col min-h-48">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-slate-300 font-bold tracking-widest uppercase">4. DANH SÁCH QUÁI ĐANG BAY ({targets.filter((t) => !t.isDead).length})</span>
+              <span className="font-mono text-[8px] text-slate-500">BẤM NÚT ĐỂ DIỆT</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto divide-y divide-white/5 pr-1 max-h-52">
+              {targets.filter((t) => !t.isDead).length === 0 ? (
+                <p className="font-mono text-[10px] text-slate-500 text-center py-4">Không có quái vật nào trên màn hình</p>
+              ) : (
+                targets
+                  .filter((t) => !t.isDead)
+                  .map((t, idx) => (
+                    <div key={t.id} className="flex items-center justify-between py-1.5 gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-display text-xs font-bold text-cyan">{t.word}</span>
+                          <span className="font-mono text-[9px] text-slate-300">({t.reading})</span>
+                          {t.type === "MINI_BOSS" && <Pill tone="rose">BOSS HP: {t.currentHp}</Pill>}
+                        </div>
+                        <p className="font-mono text-[8px] text-slate-400 truncate">Nghĩa: {t.meaning} · Y: {Math.round(t.posY)}%</p>
+                      </div>
+
+                      <button
+                        onClick={() => killTargetById(t.id)}
+                        className="shrink-0 px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/40 border border-rose-400/40 font-mono text-[9px] font-bold text-rose-300 transition"
+                      >
+                        ⚡ Diệt ({idx + 1})
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { screen, setScreen, creditsBalance, bgmEnabled, toggleBgm, isSettingsOpen, closeSettings, openSettings } = useAirDefenseStore();
 
@@ -989,7 +1257,8 @@ export default function App() {
     augment: <AugmentDraft />,
     debrief: <Debrief />,
     rank: <RankArchive />,
-    settings: <AudioSettingsView />
+    settings: <AudioSettingsView />,
+    sandbox: <DevSandboxView />
   };
 
   return (

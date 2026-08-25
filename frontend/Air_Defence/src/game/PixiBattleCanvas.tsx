@@ -415,6 +415,14 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
               enemyCont.addChild(bossHpBar);
             }
 
+            // Click-to-Kill (Hỗ trợ Developer & Quick Aim)
+            enemyCont.eventMode = "static";
+            enemyCont.cursor = "crosshair";
+            enemyCont.on("pointerdown", (e) => {
+              e.stopPropagation();
+              useAirDefenseStore.getState().killTargetById(t.id);
+            });
+
             enemiesLayer.addChild(enemyCont);
             node = { container: enemyCont, sprite: enemySpr, textKanji, textReading, badgeG, bossHpBar, mineFrame: 0 };
             enemyNodes.set(t.id, node);
