@@ -764,8 +764,24 @@ export default function App() {
           ))}
         </nav>
 
+        {/* Audio / BGM Toggle */}
+        <div className="mt-2 border-t border-white/10 pt-2">
+          <button
+            onClick={toggleBgm}
+            className={`w-full flex min-h-8 items-center gap-2 rounded-xl px-2.5 text-left transition font-mono text-[10px] ${
+              bgmEnabled
+                ? "text-cyan bg-cyan-300/10 border border-cyan-300/30"
+                : "text-slate-500 bg-white/5 border border-white/10"
+            }`}
+            title="Bật/Tắt Nhạc Nền Tự Động"
+          >
+            <span>{bgmEnabled ? "♫" : "🔇"}</span>
+            <span className="hidden lg:block">{bgmEnabled ? "BGM: ON" : "BGM: OFF"}</span>
+          </button>
+        </div>
+
         {/* Return to Arena Hub Button */}
-        <div className="mt-4 border-t border-white/10 pt-3">
+        <div className="mt-2 border-t border-white/10 pt-2">
           <a
             href="/games"
             className="flex min-h-10 items-center gap-2.5 rounded-xl border border-rose-400/40 bg-rose-500/10 px-2.5 text-rose-300 transition hover:bg-rose-500/20 hover:border-rose-400"

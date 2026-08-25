@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { useAirDefenseStore } from "./useAirDefenseStore";
 import { GAME_CONFIG } from "./gameConfig";
+import { LootItem } from "./types";
 
 interface ExplosionAnim {
   container: Container;
@@ -22,7 +23,10 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
   const screenShake = useAirDefenseStore((s) => s.screenShake);
   const inboundBoss = useAirDefenseStore((s) => s.inboundBoss);
   const waveTransition = useAirDefenseStore((s) => s.waveTransition);
+  const introState = useAirDefenseStore((s) => s.introState);
+  const floatingTexts = useAirDefenseStore((s) => s.floatingTexts);
   const tickGameLoop = useAirDefenseStore((s) => s.tickGameLoop);
+  const skipIntro = useAirDefenseStore((s) => s.skipIntro);
 
   useEffect(() => {
     let isMounted = true;
@@ -55,17 +59,19 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
       // Layer Containers
       const bgLayer = new Container();
       const fxLayer = new Container();
+      const lootLayer = new Container();
       const enemiesLayer = new Container();
       const playerLayer = new Container();
       const explosionLayer = new Container();
-      const transitionLayer = new Container();
+      const textLayer = new Container();
 
       app.stage.addChild(bgLayer);
       app.stage.addChild(fxLayer);
+      app.stage.addChild(lootLayer);
       app.stage.addChild(enemiesLayer);
       app.stage.addChild(playerLayer);
       app.stage.addChild(explosionLayer);
-      app.stage.addChild(transitionLayer);
+      app.stage.addChild(textLayer);
 
       // 1. Background Parallax
       let bgSprite1: Sprite | null = null;
@@ -182,7 +188,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         enemyFastTex = await Assets.load<Texture>("/assets/space/Enemies/enemy_2_r_m.png");
       } catch (e) {}
 
-      // Active Enemy Dictionary
+      // Active Enemy Nodes
       const enemyNodes = new Map<
         string,
         {
@@ -195,6 +201,9 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
           mineFrame: number;
         }
       >();
+
+      // Active Loot Nodes
+      const lootNodes = new Map<string, { container: Container; g: Graphics; rotSpeed: number }>();
 
       const activeExplosions: ExplosionAnim[] = [];
       const laserG = new Graphics();
@@ -255,6 +264,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
 
         const currentTransition = useAirDefenseStore.getState().waveTransition;
         const isWarping = currentTransition.active && currentTransition.phase === "warp";
+        const isIntro = useAirDefenseStore.getState().introState.active;
 
         // Background Parallax Scroll & Warp Speed
         const bgSpeed = isWarping ? GAME_CONFIG.VISUALS.bgScrollSpeed * 7 : GAME_CONFIG.VISUALS.bgScrollSpeed;
@@ -286,6 +296,14 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             s.g.circle(0, 0, 1.5).fill({ color: 0xc1eeff, alpha: 0.8 });
           }
         });
+
+        // Player Ship Intro Entrance Animation
+        if (isIntro) {
+          const targetY = app.screen.height * 0.85;
+          playerShipContainer.y = Math.max(targetY, playerShipContainer.y - 4 * delta);
+        } else {
+          playerShipContainer.y = app.screen.height * 0.85;
+        }
 
         // Exhaust flame cycle
         exhaustTick += delta;
@@ -325,12 +343,8 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
               }
               // Double Pulsating Boss Shockwave Aura
               const auraG = new Graphics();
-              auraG
-                .circle(0, 0, 68)
-                .stroke({ color: 0xff1a4b, width: 3, alpha: 0.85 });
-              auraG
-                .circle(0, 0, 84)
-                .stroke({ color: 0xff3366, width: 1.5, alpha: 0.5 });
+              auraG.circle(0, 0, 68).stroke({ color: 0xff1a4b, width: 3, alpha: 0.85 });
+              auraG.circle(0, 0, 84).stroke({ color: 0xff3366, width: 1.5, alpha: 0.5 });
               enemyCont.addChild(auraG);
             } else if (t.type === "SPACE_MINE" && mineTextures.length > 0) {
               enemySpr = new Sprite(mineTextures[0]);
@@ -461,6 +475,61 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
           }
         });
 
+        // ====================================================================
+        // RENDER LOOT ITEMS (Credit Diamonds, Repair Packs, Hyper Orbs)
+        // ====================================================================
+        const currentLoot = useAirDefenseStore.getState().lootItems;
+        const activeLootIds = new Set<string>();
+
+        currentLoot.forEach((item) => {
+          if (item.collected) return;
+          activeLootIds.add(item.id);
+
+          let node = lootNodes.get(item.id);
+          if (!node) {
+            const cont = new Container();
+            const g = new Graphics();
+
+            if (item.type === "CREDIT_CRYSTAL") {
+              // Glowing Gold / Amber Diamond Crystal
+              g.poly([0, -10, 8, 0, 0, 10, -8, 0])
+                .fill({ color: 0xffd700, alpha: 0.95 })
+                .stroke({ color: 0xfff0a0, width: 1.5 });
+              g.circle(0, 0, 12).stroke({ color: 0xffaa00, width: 1, alpha: 0.5 });
+            } else if (item.type === "REPAIR_PACK") {
+              // Glowing Green Repair Nano Box
+              g.roundRect(-8, -8, 16, 16, 3)
+                .fill({ color: 0x00e676, alpha: 0.9 })
+                .stroke({ color: 0xffffff, width: 1.5 });
+              // White cross
+              g.rect(-2, -5, 4, 10).fill({ color: 0xffffff });
+              g.rect(-5, -2, 10, 4).fill({ color: 0xffffff });
+            } else {
+              // Glowing Violet Plasma Hyper Orb
+              g.circle(0, 0, 9).fill({ color: 0xba68c8, alpha: 0.95 }).stroke({ color: 0xe1bee7, width: 1.5 });
+              g.circle(0, 0, 14).stroke({ color: 0x9c27b0, width: 1, alpha: 0.6 });
+            }
+
+            cont.addChild(g);
+            lootLayer.addChild(cont);
+            node = { container: cont, g, rotSpeed: (Math.random() - 0.5) * 0.1 };
+            lootNodes.set(item.id, node);
+          }
+
+          node.container.x = (item.x / 100) * app.screen.width;
+          node.container.y = (item.y / 100) * app.screen.height;
+          node.g.rotation += node.rotSpeed * delta;
+        });
+
+        // Clean collected/expired loot
+        lootNodes.forEach((node, id) => {
+          if (!activeLootIds.has(id)) {
+            lootLayer.removeChild(node.container);
+            node.container.destroy({ children: true });
+            lootNodes.delete(id);
+          }
+        });
+
         // Update Active Explosions
         for (let i = activeExplosions.length - 1; i >= 0; i--) {
           const exp = activeExplosions[i];
@@ -549,10 +618,76 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         <div className="pointer-events-none absolute inset-0 border-4 border-rose-500/80 shadow-[inset_0_0_60px_rgba(255,77,109,.6)] animate-pulse z-10" />
       )}
 
+      {/* Floating Pickup Text Popups */}
+      {floatingTexts.map((ft) => (
+        <div
+          key={ft.id}
+          className="pointer-events-none absolute -translate-x-1/2 font-mono text-xs font-extrabold tracking-wider z-25 transition-all duration-75"
+          style={{
+            left: `${ft.x}%`,
+            top: `${ft.y}%`,
+            color: ft.color,
+            opacity: ft.opacity,
+            textShadow: `0 0 10px ${ft.color}`
+          }}
+        >
+          {ft.text}
+        </div>
+      ))}
+
+      {/* 🚀 MATCH LAUNCH INTRO OVERLAY (Cinematic 3-Stage Bootup) */}
+      {introState.active && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/65 backdrop-blur-sm transition-all duration-300">
+          <div className="text-center px-4 max-w-lg">
+            {introState.phase === "boot" && (
+              <div className="animate-pulse">
+                <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">SYSTEM TELEMETRY SCAN</p>
+                <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white mt-1">
+                  AI DEFENSE MATRIX : ONLINE
+                </h2>
+                <div className="mt-3 flex justify-center gap-2">
+                  <span className="h-1.5 w-12 rounded-full bg-cyan animate-pulse" />
+                  <span className="h-1.5 w-12 rounded-full bg-cyan/50" />
+                  <span className="h-1.5 w-12 rounded-full bg-cyan/20" />
+                </div>
+              </div>
+            )}
+
+            {introState.phase === "warpin" && (
+              <div className="animate-bounce">
+                <p className="font-mono text-xs text-[#ffc857] tracking-[.35em] uppercase font-bold">WARP INGRESS</p>
+                <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white drop-shadow-[0_0_30px_rgba(85,244,255,0.8)]">
+                  FLAGSHIP DEPLOYED
+                </h2>
+                <p className="font-mono text-[10px] text-slate-300 mt-1">VĂN TỐC TÁC CHIẾN ĐÃ SẴN SÀNG</p>
+              </div>
+            )}
+
+            {introState.phase === "ready" && (
+              <div className="animate-pulse">
+                <p className="font-mono text-xs text-rose-400 tracking-[.4em] uppercase font-bold">SECTOR 01 ENGAGED</p>
+                <h2 className="font-display text-5xl sm:text-6xl font-extrabold text-cyan drop-shadow-[0_0_40px_rgba(85,244,255,1)]">
+                  ENGAGE!
+                </h2>
+              </div>
+            )}
+
+            {/* Skip Intro Button */}
+            <div className="mt-6">
+              <button
+                onClick={skipIntro}
+                className="pointer-events-auto px-4 py-1.5 rounded-full border border-white/20 bg-white/5 font-mono text-[10px] text-slate-300 hover:bg-white/15 hover:text-white transition"
+              >
+                BỎ QUA INTRO [ESC] →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cinematic Wave Transition Overlay */}
-      {waveTransition.active && (
+      {waveTransition.active && !introState.active && (
         <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300">
-          {/* Phase 1: Wave Cleared Victory */}
           {waveTransition.phase === "cleared" && (
             <div className="text-center animate-pulse">
               <p className="font-mono text-xs text-[#ffc857] tracking-[.3em] uppercase">SECTOR DEFENDED · +1,000 PTS</p>
@@ -562,7 +697,6 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             </div>
           )}
 
-          {/* Phase 2: Hyperspace Warp Drive */}
           {waveTransition.phase === "warp" && (
             <div className="text-center animate-bounce">
               <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">HYPERDRIVE ACCELERATION</p>
@@ -572,7 +706,6 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             </div>
           )}
 
-          {/* Phase 3: Incoming Wave Alert / Boss Dreadnought */}
           {waveTransition.phase === "incoming" && (
             <div className="text-center">
               {waveTransition.isBoss ? (
@@ -597,7 +730,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
       )}
 
       {/* Boss Inbound Alert Banner */}
-      {inboundBoss && !waveTransition.active && (
+      {inboundBoss && !waveTransition.active && !introState.active && (
         <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 bg-rose-950/85 border border-rose-500 px-5 py-1.5 rounded-full backdrop-blur z-20 animate-bounce shadow-[0_0_24px_rgba(255,51,102,0.8)]">
           <p className="font-mono text-xs font-bold text-rose-300 tracking-widest uppercase">
             ⚠ CẢNH BÁO: CHIẾN HẠM BOSS XÂM NHẬP ⚠

@@ -1,6 +1,8 @@
 export type Screen = "deck" | "hangar" | "talent" | "shop" | "queue" | "endless" | "pvp" | "augment" | "debrief" | "rank";
 
-export type AugmentCategory = "OFFENSIVE" | "DEFENSIVE" | "CONTROL" | "UTILITY";
+export type GameMode = "endless" | "pvp";
+
+export type AugmentCategory = "OFFENSE" | "DEFENSE" | "CONTROL" | "UTILITY" | "SURVIVAL" | "TACTICAL";
 
 export interface AugmentCard {
   id: string;
@@ -11,19 +13,42 @@ export interface AugmentCard {
   tone: "cyan" | "rose" | "violet" | "amber";
 }
 
-export interface EnemyTarget {
+export interface TargetWord {
   id: string;
   word: string;
   reading: string;
   meaning: string;
-  type: "MONSTER_NORMAL" | "MONSTER_FAST" | "SPACE_MINE" | "MINI_BOSS";
-  posX: number; // 10..90 %
-  posY: number; // 0..100 %
+  posX: number;
+  posY: number;
   speed: number;
-  maxHp: number;
-  currentHp: number;
-  isDead: boolean;
+  type: "MONSTER_NORMAL" | "MONSTER_FAST" | "SPACE_MINE" | "MINI_BOSS";
+  maxHp?: number;
+  currentHp?: number;
+  isDead?: boolean;
+}
+
+export type LootItemType = "CREDIT_CRYSTAL" | "REPAIR_PACK" | "HYPER_ORB";
+
+export interface LootItem {
+  id: string;
+  type: LootItemType;
+  x: number;      // % of canvas width
+  y: number;      // % of canvas height
+  vx: number;     // horizontal velocity
+  vy: number;     // vertical velocity
+  value: number;  // amount of credit / hp / charge
+  collected: boolean;
   spawnTime: number;
+}
+
+export interface FloatingText {
+  id: string;
+  text: string;
+  color: string;
+  x: number;
+  y: number;
+  opacity: number;
+  life: number;
 }
 
 export interface WeakWord {
@@ -36,11 +61,11 @@ export interface WeakWord {
 export interface ShipDef {
   id: string;
   name: string;
-  role: "BALANCED" | "CONTROL" | "VELOCITY" | "FORTRESS";
+  role: string;
   hp: number;
   speed: number;
   price: number;
   colorTheme: "cyan" | "violet" | "amber";
-  spriteKey: string;
+  spritePath: string;
   passiveDesc: string;
 }
