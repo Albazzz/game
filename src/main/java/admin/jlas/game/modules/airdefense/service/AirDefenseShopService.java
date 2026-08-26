@@ -216,14 +216,22 @@ public class AirDefenseShopService {
     @Transactional(readOnly = true)
     public List<AirDefenseLeaderboardItem> getEndlessLeaderboard(UserPrincipal principal) {
         Long currentUserId = principal != null ? principal.getUserId() : null;
-        List<AirDefenseResult> topResults = resultRepository.findTopEndlessScores(PageRequest.of(0, 20));
+        List<AirDefenseResult> topResults = resultRepository.findTopEndlessScores(PageRequest.of(0, 50));
 
         List<AirDefenseLeaderboardItem> items = new ArrayList<>();
-        int rank = 1;
+        Set<Long> seenUserIds = new HashSet<>();
+
         for (AirDefenseResult res : topResults) {
             User user = res.getUser();
             Long userId = user != null ? user.getUserId() : null;
-            String name = "PILOT #" + rank;
+            if (userId != null) {
+                if (seenUserIds.contains(userId)) {
+                    continue; // Mỗi phi công chỉ xuất hiện 1 lần với kỷ lục điểm cao nhất
+                }
+                seenUserIds.add(userId);
+            }
+
+            String name = "PILOT";
             if (user != null) {
                 if (user.getFullName() != null && !user.getFullName().isBlank()) {
                     name = user.getFullName();
@@ -248,7 +256,7 @@ public class AirDefenseShopService {
             boolean isCur = currentUserId != null && currentUserId.equals(userId);
 
             items.add(new AirDefenseLeaderboardItem(
-                    rank++,
+                    0,
                     userId,
                     name,
                     shipId,
@@ -263,27 +271,48 @@ public class AirDefenseShopService {
             ));
         }
 
-        // Nếu DB chưa có nhiều kết quả, bổ sung mock telemetry mẫu để bảng đẹp mắt
-        if (items.isEmpty()) {
-            items.add(new AirDefenseLeaderboardItem(1, 101L, "MIZUKI", "RAPTOR-7", "RAPTOR-7 HYPERION", "violet", 204890, 42, 45, 98, "CELESTIAL", false));
-            items.add(new AirDefenseLeaderboardItem(2, 102L, "AERIS", "FROSTBYTE", "FROSTBYTE SENTINEL", "cyan", 182410, 38, 36, 95, "DIAMOND", false));
-            items.add(new AirDefenseLeaderboardItem(3, 103L, "REN", "AEGIS-01", "AEGIS DEFENDER", "amber", 164720, 35, 29, 92, "PLATINUM", false));
+        // Gán thứ hạng 1, 2, 3... chuẩn xác
+        List<AirDefenseLeaderboardItem> rankedList = new ArrayList<>();
+        int rank = 1;
+        for (AirDefenseLeaderboardItem it : items) {
+            rankedList.add(new AirDefenseLeaderboardItem(
+                    rank++,
+                    it.userId(),
+                    it.displayName(),
+                    it.shipId(),
+                    it.shipName(),
+                    it.shipTone(),
+                    it.score(),
+                    it.waveReached(),
+                    it.bestCombo(),
+                    it.accuracyPercent(),
+                    it.rankTier(),
+                    it.isCurrentUser()
+            ));
         }
 
-        return items;
+        return rankedList;
     }
 
     @Transactional(readOnly = true)
     public List<AirDefenseLeaderboardItem> getRankedLeaderboard(UserPrincipal principal) {
         Long currentUserId = principal != null ? principal.getUserId() : null;
-        List<AirDefenseResult> topResults = resultRepository.findTopRankedWinners(PageRequest.of(0, 20));
+        List<AirDefenseResult> topResults = resultRepository.findTopRankedWinners(PageRequest.of(0, 50));
 
         List<AirDefenseLeaderboardItem> items = new ArrayList<>();
-        int rank = 1;
+        Set<Long> seenUserIds = new HashSet<>();
+
         for (AirDefenseResult res : topResults) {
             User user = res.getUser();
             Long userId = user != null ? user.getUserId() : null;
-            String name = "PILOT #" + rank;
+            if (userId != null) {
+                if (seenUserIds.contains(userId)) {
+                    continue; // Mỗi phi công chỉ xuất hiện 1 lần duy nhất
+                }
+                seenUserIds.add(userId);
+            }
+
+            String name = "PILOT";
             if (user != null) {
                 if (user.getFullName() != null && !user.getFullName().isBlank()) {
                     name = user.getFullName();
@@ -307,7 +336,7 @@ public class AirDefenseShopService {
             boolean isCur = currentUserId != null && currentUserId.equals(userId);
 
             items.add(new AirDefenseLeaderboardItem(
-                    rank++,
+                    0,
                     userId,
                     name,
                     shipId,
@@ -322,12 +351,25 @@ public class AirDefenseShopService {
             ));
         }
 
-        if (items.isEmpty()) {
-            items.add(new AirDefenseLeaderboardItem(1, 104L, "KAITO", "RAPTOR-7", "RAPTOR-7 HYPERION", "violet", 2240, 1, 50, 99, "CELESTIAL", false));
-            items.add(new AirDefenseLeaderboardItem(2, 101L, "MIZUKI", "FROSTBYTE", "FROSTBYTE SENTINEL", "cyan", 2116, 1, 44, 96, "CELESTIAL", false));
-            items.add(new AirDefenseLeaderboardItem(3, 102L, "AERIS", "AEGIS-01", "AEGIS DEFENDER", "amber", 1804, 1, 32, 91, "DIAMOND", false));
+        List<AirDefenseLeaderboardItem> rankedList = new ArrayList<>();
+        int rank = 1;
+        for (AirDefenseLeaderboardItem it : items) {
+            rankedList.add(new AirDefenseLeaderboardItem(
+                    rank++,
+                    it.userId(),
+                    it.displayName(),
+                    it.shipId(),
+                    it.shipName(),
+                    it.shipTone(),
+                    it.score(),
+                    it.waveReached(),
+                    it.bestCombo(),
+                    it.accuracyPercent(),
+                    it.rankTier(),
+                    it.isCurrentUser()
+            ));
         }
 
-        return items;
+        return rankedList;
     }
 }
