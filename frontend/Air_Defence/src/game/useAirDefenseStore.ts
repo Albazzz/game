@@ -145,7 +145,8 @@ export function generateWave(wave: number): TargetWord[] {
   }
 
   if (isBossWave) {
-    const bossVocab = BOSS_VOCABULARY[(wave / 5 - 1) % BOSS_VOCABULARY.length] || BOSS_VOCABULARY[0];
+    const bossVocab = BOSS_VOCABULARY[Math.floor(wave / 5 - 1) % BOSS_VOCABULARY.length] || BOSS_VOCABULARY[0];
+    const scaledBossHp = GAME_CONFIG.ENEMIES.bossHp + Math.max(0, Math.floor((wave - 1) / 5));
     waveTargets.unshift({
       id: `boss-w${wave}-${Date.now()}`,
       word: bossVocab.word,
@@ -155,8 +156,8 @@ export function generateWave(wave: number): TargetWord[] {
       posY: -22,
       speed: (GAME_CONFIG.ENEMIES.baseSpeed + wave * GAME_CONFIG.ENEMIES.speedWaveMultiplier) * GAME_CONFIG.ENEMIES.bossSpeedMult,
       type: "MINI_BOSS",
-      maxHp: GAME_CONFIG.ENEMIES.bossHp,
-      currentHp: GAME_CONFIG.ENEMIES.bossHp
+      maxHp: scaledBossHp,
+      currentHp: scaledBossHp
     });
   }
 
@@ -257,6 +258,7 @@ interface AirDefenseState {
   damagePlayer: (amount?: number) => void;
   triggerWaveClear: () => void;
   resetSandbox: () => void;
+  playIntroSequence: (targetScreen?: Screen) => void;
 }
 
 let autoPilotCounter = 0;
@@ -446,6 +448,36 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
 
   skipIntro: () => {
     set({ introState: { active: false, phase: "done" } });
+  },
+
+  playIntroSequence: (targetScreen) => {
+    const destScreen = targetScreen || get().screen;
+    soundManager.playIntroLaunch();
+    set({
+      screen: destScreen,
+      introState: {
+        active: true,
+        phase: "boot"
+      }
+    });
+
+    setTimeout(() => {
+      if (get().introState.active) {
+        set({ introState: { active: true, phase: "warpin" } });
+      }
+    }, 1300);
+
+    setTimeout(() => {
+      if (get().introState.active) {
+        set({ introState: { active: true, phase: "ready" } });
+      }
+    }, 2600);
+
+    setTimeout(() => {
+      if (get().introState.active) {
+        set({ introState: { active: false, phase: "done" } });
+      }
+    }, 3800);
   },
 
   spawnLoot: (x: number, y: number, isBoss = false) => {
@@ -650,24 +682,45 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
 
     soundManager.playHyperBeam();
 
+    const updatedTargets: TargetWord[] = [];
+
     targets.forEach((t) => {
-      if (!t.isDead) {
-        spawnLoot(t.posX, Math.max(10, t.posY), t.type === "MINI_BOSS");
+      if (t.isDead) return;
+
+      if (t.type === "MINI_BOSS") {
+        const currentHp = t.currentHp || 1;
+        const damage = 3; // Hyper Beam gây đúng 3 sát thương cho Boss
+        if (currentHp <= damage) {
+          // Boss bị tiêu diệt
+          updatedTargets.push({ ...t, currentHp: 0, isDead: true });
+          spawnLoot(t.posX, Math.max(10, t.posY), true);
+        } else {
+          // Boss còn sống sau khi trừ 3 HP
+          const remainingHp = currentHp - damage;
+          updatedTargets.push({ ...t, currentHp: remainingHp, isDead: false });
+          // Rơi một lượng đá quý thưởng khi bắn trúng Boss
+          spawnLoot(t.posX, Math.max(10, t.posY), false);
+        }
+      } else {
+        // Quái vật thường bị hủy diệt tức thì
+        updatedTargets.push({ ...t, isDead: true });
+        spawnLoot(t.posX, Math.max(10, t.posY), false);
       }
     });
 
-    const wipedTargets = targets.map((t) => ({ ...t, isDead: true }));
-
     set({
       hyperBeamCharge: 0,
-      targets: wipedTargets,
+      targets: updatedTargets,
       score: score + 500 * wave,
       screenShake: true
     });
 
     setTimeout(() => {
       set({ screenShake: false });
-      advanceToNextWave();
+      const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
+      if (aliveLeft === 0) {
+        advanceToNextWave();
+      }
     }, 450);
   },
 
@@ -840,6 +893,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   spawnBossInstantly: () => {
     const { targets, wave } = get();
     const bossVocab = BOSS_VOCABULARY[0];
+    const scaledBossHp = GAME_CONFIG.ENEMIES.bossHp + Math.max(0, Math.floor((wave - 1) / 5));
     const bossTarget: TargetWord = {
       id: `boss-dev-${Date.now()}`,
       word: bossVocab.word,
@@ -849,8 +903,8 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       posY: 5,
       speed: (GAME_CONFIG.ENEMIES.baseSpeed + wave * GAME_CONFIG.ENEMIES.speedWaveMultiplier) * GAME_CONFIG.ENEMIES.bossSpeedMult,
       type: "MINI_BOSS",
-      maxHp: GAME_CONFIG.ENEMIES.bossHp,
-      currentHp: GAME_CONFIG.ENEMIES.bossHp
+      maxHp: scaledBossHp,
+      currentHp: scaledBossHp
     };
     soundManager.playBossSiren();
     soundManager.switchBgm("boss");
@@ -1019,23 +1073,26 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       lootItems.forEach((item) => {
         if (item.collected) return;
 
-        let nx = item.x + item.vx * effectiveDelta;
-        let ny = item.y + item.vy * effectiveDelta;
+        // Current item physics update
+        let vx = (item.vx || 0) * 0.92;
+        let vy = (item.vy || 0.4) * 0.92;
 
-        item.vx *= 0.94;
-        item.vy = Math.min(1.2, item.vy + 0.02 * effectiveDelta);
+        let nx = item.x + vx * effectiveDelta;
+        let ny = item.y + vy * effectiveDelta;
 
         const dx = playerX - nx;
         const dy = playerY - ny;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < GAME_CONFIG.LOOT.magnetDistance || ny > 60) {
-          const pull = (GAME_CONFIG.LOOT.magnetSpeed * (1 - dist / 100) + 0.12) * effectiveDelta;
-          nx += (dx / dist) * pull * 4;
-          ny += (dy / dist) * pull * 4;
+        // Continuous accelerating magnetic attraction toward player ship
+        if (dist > 0.001) {
+          const magnetSpeed = Math.min(3.6, 0.5 + (1 - Math.min(1, dist / 80)) * 3.1) * effectiveDelta;
+          nx += (dx / dist) * magnetSpeed;
+          ny += (dy / dist) * magnetSpeed;
         }
 
-        if (dist < 7 || ny >= 88) {
+        // Absorption when reaching player radius
+        if (dist < 6 || ny >= 85) {
           soundManager.playItemCollect(item.type);
 
           if (item.type === "CREDIT_CRYSTAL") {
@@ -1073,18 +1130,18 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
             });
           }
         } else if (ny < 105) {
-          nextLoot.push({ ...item, x: nx, y: ny });
+          nextLoot.push({ ...item, x: nx, y: ny, vx, vy });
         }
       });
 
-      if (creditAdd > 0 || hpAdd > 0 || beamAdd > 0 || nextLoot.length !== lootItems.length) {
-        set({
-          lootItems: nextLoot,
-          creditsEarned: creditsEarned + creditAdd,
-          hp: Math.min(maxHp, hp + hpAdd),
-          hyperBeamCharge: Math.min(100, hyperBeamCharge + beamAdd)
-        });
-      }
+      // ALWAYS update lootItems so rendering position smoothly animates in Pixi!
+      set({
+        lootItems: nextLoot,
+        floatingTexts: nextFloating,
+        creditsEarned: creditsEarned + creditAdd,
+        hp: Math.min(maxHp, hp + hpAdd),
+        hyperBeamCharge: Math.min(100, hyperBeamCharge + beamAdd)
+      });
     }
 
     // 3. Tick Floating Texts

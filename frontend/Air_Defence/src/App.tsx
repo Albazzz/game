@@ -372,6 +372,9 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
         submitAnswer(input);
         setInput("");
       }
+    } else if (e.key === " " && input === "" && hyperBeamCharge >= GAME_CONFIG.PLAYER.hyperBeamMaxCharge) {
+      e.preventDefault();
+      fireHyperBeam();
     }
   };
 
@@ -1004,7 +1007,9 @@ function DevSandboxView() {
     killTargetById,
     startMatch,
     openSettings,
-    resetSandbox
+    resetSandbox,
+    playIntroSequence,
+    fireHyperBeam
   } = useAirDefenseStore();
 
   return (
@@ -1100,7 +1105,7 @@ function DevSandboxView() {
                 onClick={spawnBossInstantly}
                 className="px-2 py-1.5 rounded-lg border border-rose-400/50 bg-rose-500/15 hover:bg-rose-500/25 font-mono text-[10px] font-bold text-rose-300 transition text-left"
               >
-                👾 Spawn Boss 2.6x
+                👾 Spawn Boss (Wave {wave})
               </button>
             </div>
 
@@ -1129,10 +1134,10 @@ function DevSandboxView() {
                 ✨ Mở Chọn Lõi (Augment)
               </button>
               <button
-                onClick={() => startMatch("endless")}
-                className="px-2 py-1 rounded border border-white/10 bg-white/5 hover:bg-white/15 font-mono text-[9px] text-slate-300"
+                onClick={() => playIntroSequence("sandbox")}
+                className="px-2 py-1 rounded border border-cyan-300/40 bg-cyan-300/10 hover:bg-cyan-300/20 font-mono text-[9px] text-cyan"
               >
-                🚀 Chạy Intro
+                🚀 Chạy Intro Sandbox
               </button>
             </div>
           </Panel>
@@ -1169,7 +1174,18 @@ function DevSandboxView() {
                 onClick={maxHyperBeam}
                 className="px-2 py-1.5 rounded-lg border border-violet-400/40 bg-violet-400/10 hover:bg-violet-400/20 font-mono text-[9px] font-bold text-[#c3a6ff] text-left"
               >
-                ⚡ 100% Hyper Beam
+                ⚡ Nạp 100% Hyper Beam
+              </button>
+              <button
+                onClick={fireHyperBeam}
+                disabled={hyperBeamCharge < 100}
+                className={`col-span-2 px-2 py-1.5 rounded-lg border font-mono text-[9px] font-bold text-center transition ${
+                  hyperBeamCharge >= 100
+                    ? "border-violet-400 bg-violet-500 text-white animate-pulse shadow-[0_0_15px_rgba(169,121,255,0.6)]"
+                    : "border-white/10 bg-white/5 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                ⚡ BẮN HYPER BEAM ({hyperBeamCharge}% CHARGE)
               </button>
             </div>
           </Panel>
