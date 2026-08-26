@@ -7,9 +7,8 @@ import { soundManager } from "./game/soundEffects";
 
 const nav: { id: Screen; icon: string; label: string }[] = [
   { id: "deck", icon: "◈", label: "Command Deck" },
-  { id: "hangar", icon: "△", label: "Hangar" },
+  { id: "hangar", icon: "△", label: "Hangar & Tàu" },
   { id: "talent", icon: "✦", label: "Talent Lab" },
-  { id: "shop", icon: "◉", label: "Supply Dock" },
   { id: "queue", icon: "⌁", label: "Match Queue" },
   { id: "rank", icon: "▤", label: "Rank Archive" },
   { id: "settings", icon: "⚙", label: "Audio & System" },
@@ -265,57 +264,6 @@ function TalentLab() {
   );
 }
 
-function SupplyDock() {
-  const { creditsBalance, ownedShipIds, buyShip, equipShip, equippedShipId } = useAirDefenseStore();
-
-  return (
-    <div className="h-full flex flex-col overflow-y-auto pr-1">
-      <Header
-        eyebrow={`SỐ DƯ CREDITS: ◉ ${creditsBalance}`}
-        title="Cửa Hàng Vũ Trụ (Supply Dock)"
-        detail="Tùy chọn mở khóa bất kỳ mẫu tàu chiến nào với kỹ năng độc quyền theo ý thích."
-      />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 flex-1">
-        {SHIPS_CATALOG.map((ship) => {
-          const owned = ownedShipIds.includes(ship.id);
-          const isEquipped = equippedShipId === ship.id;
-          return (
-            <Panel key={ship.id} className="overflow-hidden p-4 flex flex-col justify-between">
-              <div>
-                <ShipImage spritePath={ship.spritePath} name={ship.name} />
-                <div className="mt-3 flex justify-between items-center">
-                  <Pill tone={ship.colorTheme}>{ship.role}</Pill>
-                  <span className="font-mono text-xs text-cyan">TỐC ĐỘ {ship.speed}×</span>
-                </div>
-                <h2 className="font-display mt-2 text-base font-bold">{ship.name}</h2>
-                <p className="mt-2 text-xs leading-5 text-slate-400">{ship.passiveDesc}</p>
-                <div className="mt-3 flex gap-4 border-t border-white/10 pt-2.5">
-                  <Stat label="MÁU HULL" value={ship.hp} />
-                  <Stat label="GIÁ MUA" value={ship.price === 0 ? "FREE" : `${ship.price} ◉`} tone="amber" />
-                </div>
-              </div>
-              <div className="mt-4">
-                {owned ? (
-                  <Action onClick={() => equipShip(ship.id)} muted={isEquipped} className="w-full">
-                    {isEquipped ? "✓ ĐANG SỬ DỤNG" : "TRANG BỊ TÀU"}
-                  </Action>
-                ) : (
-                  <Action
-                    onClick={() => buyShip(ship.id)}
-                    disabled={creditsBalance < ship.price}
-                    className="w-full"
-                  >
-                    MUA NGAY · {ship.price} ◉
-                  </Action>
-                )}
-              </div>
-            </Panel>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function MatchQueue() {
   const [selectedMode, setSelectedMode] = useState<"endless" | "pvp">("endless");
@@ -1316,7 +1264,7 @@ export default function App() {
     deck: <Deck />,
     hangar: <Hangar />,
     talent: <TalentLab />,
-    shop: <SupplyDock />,
+    shop: <Hangar />,
     queue: <MatchQueue />,
     endless: <Battle />,
     pvp: <Battle isPvP />,
