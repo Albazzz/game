@@ -3,6 +3,7 @@ import { AugmentCard, AudioSettings, FloatingText, GameMode, LootItem, LootItemT
 import { GAME_CONFIG } from "./gameConfig";
 import { soundManager } from "./soundEffects";
 import { fetchShopDataApi, buyShipApi, equipShipApi, upgradeTalentApi, recordMatchFinishApi, fetchLeaderboardApi, LeaderboardItem } from "./apiClient";
+import { matchesTargetWord, romajiToHiragana } from "./romajiConverter";
 
 export const SHIPS_CATALOG = GAME_CONFIG.SHIPS;
 
@@ -221,6 +222,7 @@ interface AirDefenseState {
   bgmEnabled: boolean;
   isSettingsOpen: boolean;
   audioSettings: AudioSettings;
+  freezeTimer: number;
 
   // 🛠 DEV SANDBOX & TOOLSUITE STATE
   godMode: boolean;
@@ -266,6 +268,68 @@ interface AirDefenseState {
   triggerWaveClear: () => void;
   resetSandbox: () => void;
   playIntroSequence: (targetScreen?: Screen) => void;
+}
+
+const ROMAJI_TO_HIRAGANA: Record<string, string> = {
+  a: "あ", i: "い", u: "う", e: "え", o: "お",
+  ka: "か", ki: "き", ku: "く", ke: "け", ko: "こ",
+  sa: "さ", shi: "し", si: "し", su: "す", se: "せ", so: "そ",
+  ta: "た", chi: "ち", ti: "ち", tsu: "つ", tu: "つ", te: "て", to: "と",
+  na: "な", ni: "に", nu: "ぬ", ne: "ね", no: "の",
+  ha: "は", hi: "ひ", fu: "ふ", hu: "ふ", he: "へ", ho: "ほ",
+  ma: "ま", mi: "み", mu: "む", me: "め", mo: "も",
+  ya: "や", yu: "ゆ", yo: "よ",
+  ra: "ら", ri: "り", ru: "る", re: "れ", ro: "ろ",
+  wa: "わ", wo: "を", n: "ん", nn: "ん",
+  ga: "が", gi: "ぎ", gu: "ぐ", ge: "げ", go: "ご",
+  za: "ざ", ji: "じ", zi: "じ", zu: "ず", ze: "ぜ", zo: "ぞ",
+  da: "だ", di: "ぢ", du: "づ", de: "で", do: "ど",
+  ba: "ば", bi: "び", bu: "ぶ", be: "べ", bo: "ぼ",
+  pa: "ぱ", pi: "ぴ", pu: "ぷ", pe: "ぺ", po: "ぽ",
+  kya: "きゃ", kyu: "きゅ", kyo: "きょ",
+  sha: "しゃ", shu: "しゅ", sho: "しょ", sya: "しゃ", syu: "しゅ", syo: "しょ",
+  cha: "ちゃ", chu: "ちゅ", cho: "ちょ", cya: "ちゃ", cyu: "ちゅ", cyo: "ちょ", tya: "ちゃ", tyu: "ちゅ", tyo: "ちょ",
+  nya: "にゃ", nyu: "にゅ", nyo: "にょ",
+  hya: "ひゃ", hyu: "ひゅ", hyo: "ひょ",
+  mya: "みゃ", myu: "みゅ", myo: "みょ",
+  rya: "りゃ", ryu: "りゅ", ryo: "りょ",
+  gya: "ぎゃ", gyu: "ぎゅ", gyo: "ぎょ",
+  ja: "じゃ", ju: "じゅ", jo: "じょ", jya: "じゃ", jyu: "じゅ", jyo: "じょ", zya: "じゃ", zyu: "じゅ", zyo: "じょ",
+  bya: "びゃ", byu: "びゅ", byo: "びょ",
+  pya: "ぴゃ", pyu: "ぴゅ", pyo: "ぴょ"
+};
+
+export function convertRomajiToHiragana(text: string): string {
+  let str = text.toLowerCase().trim();
+  str = str.replace(/ō/g, "ou").replace(/ū/g, "uu").replace(/ē/g, "ei").replace(/ā/g, "aa");
+  str = str.replace(/([kstpnbmgzrydh])\1/g, "っ$1");
+
+  const keys = Object.keys(ROMAJI_TO_HIRAGANA).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    str = str.replaceAll(k, ROMAJI_TO_HIRAGANA[k]);
+  }
+  return str;
+}
+
+export function isAnswerMatch(input: string, target: TargetWord): boolean {
+  const norm = input.trim().toLowerCase();
+  if (!norm) return false;
+  if (target.word.toLowerCase() === norm) return true;
+  if (target.meaning.toLowerCase() === norm) return true;
+  if (target.reading.toLowerCase() === norm) return true;
+
+  const hira = convertRomajiToHiragana(norm);
+  if (target.reading.toLowerCase() === hira) return true;
+
+  // Xử lý các biến thể phát âm phổ biến: gakko vs がっこう
+  if (target.reading.toLowerCase().startsWith(hira) && target.reading.endsWith("う") && (norm.endsWith("o") || norm.endsWith("ou"))) {
+    return true;
+  }
+  if (target.reading.toLowerCase().startsWith(hira) && target.reading.endsWith("い") && (norm.endsWith("e") || norm.endsWith("ei"))) {
+    return true;
+  }
+
+  return false;
 }
 
 let autoPilotCounter = 0;
@@ -324,6 +388,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   bgmEnabled: soundManager.getSettings().bgmEnabled && soundManager.getSettings().masterEnabled,
   isSettingsOpen: false,
   audioSettings: soundManager.getSettings(),
+  freezeTimer: 0,
 
   // DEV DEFAULTS
   godMode: false,
@@ -413,6 +478,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       bestCombo: 0,
       creditsEarned: 0,
       hyperBeamCharge: 0,
+      freezeTimer: 0,
       remainingRerolls: GAME_CONFIG.ENEMIES.defaultRerolls + talentLevels.reroll * GAME_CONFIG.TALENTS.extraRerollPerLevel,
       targets: initialTargets,
       lootItems: [],
@@ -610,18 +676,21 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     const normalized = input.trim().toLowerCase();
     if (!normalized) return false;
 
-    const { targets, score, combo, bestCombo, creditsEarned, wave, hyperBeamCharge, activeAugments, isTransitioning, advanceToNextWave, spawnLoot } = get();
+    const { targets, score, combo, bestCombo, creditsEarned, wave, hyperBeamCharge, activeAugments, isTransitioning, advanceToNextWave, spawnLoot, equippedShipId } = get();
     if (isTransitioning) return false;
 
-    const targetIdx = targets.findIndex(
-      (t) =>
-        !t.isDead &&
-        (t.reading.toLowerCase() === normalized ||
-          t.meaning.toLowerCase() === normalized ||
-          t.word.toLowerCase() === normalized)
-    );
+    // 1. Tìm tất cả quái vật khớp với từ gõ (Hiragana, Kanji, Nghĩa, Romaji & các biến thể)
+    const matchingIndices: number[] = [];
+    targets.forEach((t, idx) => {
+      if (!t.isDead && isAnswerMatch(normalized, t)) {
+        matchingIndices.push(idx);
+      }
+    });
 
-    if (targetIdx >= 0) {
+    if (matchingIndices.length > 0) {
+      // 2. Tự động khóa mục tiêu Laser vào quái gần đáy nhất (highest posY)
+      matchingIndices.sort((a, b) => targets[b].posY - targets[a].posY);
+      const targetIdx = matchingIndices[0];
       const hit = targets[targetIdx];
       const updatedTargets = [...targets];
       let isKilled = true;
@@ -637,7 +706,13 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       const newCombo = combo + 1;
       const newBest = Math.max(bestCombo, newCombo);
 
-      let scoreDelta = (GAME_CONFIG.SCORING.baseScorePerTarget + newCombo * (GAME_CONFIG.SCORING.baseScorePerTarget * GAME_CONFIG.SCORING.comboBonusMultiplier)) * wave;
+      // 3. Tính điểm số kèm combo và nội tại tàu Raptor-7 (+100% combo bonus)
+      let comboBonusMult = GAME_CONFIG.SCORING.comboBonusMultiplier;
+      if (equippedShipId === "RAPTOR-7") {
+        comboBonusMult *= 2; // +100% điểm combo
+      }
+
+      let scoreDelta = (GAME_CONFIG.SCORING.baseScorePerTarget + newCombo * (GAME_CONFIG.SCORING.baseScorePerTarget * comboBonusMult)) * wave;
       if (hit.type === "MINI_BOSS" && isKilled) {
         scoreDelta += GAME_CONFIG.SCORING.bossScoreBonus;
       }
@@ -665,6 +740,30 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         chargeDelta = hit.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.hyperBeamChargePerBossKill : GAME_CONFIG.PLAYER.hyperBeamChargePerKill;
       }
 
+      // 4. Nội tại tàu Frostbyte (đóng băng 2s sau 5 combo) hoặc Lõi CHRONO_FREEZE (4s)
+      let newFreeze = get().freezeTimer;
+      let extraFloating = get().floatingTexts;
+      if (newCombo > 0 && newCombo % 5 === 0) {
+        if (equippedShipId === "FROSTBYTE") {
+          newFreeze = Math.max(newFreeze, 2.0);
+          extraFloating = [
+            ...extraFloating,
+            {
+              id: `ft-${Date.now()}`,
+              text: "❄ FROSTBYTE FREEZE!",
+              color: "#55f4ff",
+              x: 50,
+              y: 50,
+              opacity: 1,
+              life: 2
+            }
+          ];
+        }
+        if (activeAugments.some((a) => a.id === "CHRONO_FREEZE")) {
+          newFreeze = Math.max(newFreeze, 4.0);
+        }
+      }
+
       set({
         targets: updatedTargets,
         score: Math.round(score + scoreDelta),
@@ -673,7 +772,9 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         creditsEarned: creditsEarned + creditDelta,
         hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + chargeDelta),
         lastLaserTarget: { x: hit.posX, y: Math.max(5, hit.posY) },
-        screenShake: hit.type === "MINI_BOSS"
+        screenShake: hit.type === "MINI_BOSS",
+        freezeTimer: newFreeze,
+        floatingTexts: extraFloating
       });
 
       setTimeout(() => {
@@ -687,7 +788,12 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
 
       return true;
     } else {
-      set({ combo: 0 });
+      const activeTargets = targets.filter((t) => !t.isDead);
+      const missed = activeTargets.sort((a, b) => b.posY - a.posY)[0];
+      const newWeakWords = missed
+        ? [...get().weakWords, { word: missed.word, reading: missed.reading, meaning: missed.meaning, note: "Gõ sai" }]
+        : get().weakWords;
+      set({ combo: 0, weakWords: newWeakWords });
       return false;
     }
   },
@@ -1069,7 +1175,50 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   addCredits: (amt) => set((s) => ({ creditsEarned: s.creditsEarned + amt, creditsBalance: s.creditsBalance + amt })),
   maxHyperBeam: () => set({ hyperBeamCharge: 100 }),
   healPlayer: (amt = 50) => set((s) => ({ hp: Math.min(s.maxHp, s.hp + amt) })),
-  damagePlayer: (amt = 25) => set((s) => ({ hp: Math.max(1, s.hp - amt), dangerZoneActive: true })),
+  damagePlayer: (amt = 25) => {
+    const { hp, shield, godMode, screen, score, wave, bestCombo, creditsEarned, maxHp } = get();
+    if (godMode) return;
+
+    let nextShield = shield;
+    let nextHp = hp;
+    if (nextShield > 0) {
+      if (nextShield >= amt) {
+        nextShield -= amt;
+      } else {
+        const overflow = amt - nextShield;
+        nextShield = 0;
+        nextHp = Math.max(0, nextHp - overflow);
+      }
+    } else {
+      nextHp = Math.max(0, nextHp - amt);
+    }
+
+    if (nextHp <= 0) {
+      if (screen === "sandbox") {
+        set({ hp: maxHp, dangerZoneActive: false });
+        return;
+      }
+      soundManager.switchBgm("lobby");
+      set({ hp: 0, shield: nextShield, screen: "debrief", dangerZoneActive: false });
+
+      recordMatchFinishApi({
+        score,
+        wave,
+        bestCombo,
+        creditsEarned,
+        durationMs: 30000,
+        questionsAnswered: 10,
+        correctAnswers: 10,
+        incorrectAnswers: 0,
+        accuracyPercent: 100,
+        playMode: "SOLO",
+        difficulty: "N5"
+      }).catch(console.warn);
+      return;
+    }
+
+    set({ hp: nextHp, shield: nextShield, dangerZoneActive: true });
+  },
   triggerWaveClear: () => get().advanceToNextWave(),
 
   resetSandbox: () => {
@@ -1101,7 +1250,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   },
 
   tickGameLoop: (delta) => {
-    const { targets, lootItems, floatingTexts, hp, maxHp, shield, creditsEarned, hyperBeamCharge, hyperBeamPhase, screen, weakWords, isTransitioning, advanceToNextWave, introState, godMode, autoPilot, gameTimeScale, killTargetById } = get();
+    const { targets, lootItems, floatingTexts, hp, maxHp, shield, creditsEarned, hyperBeamCharge, hyperBeamPhase, screen, weakWords, isTransitioning, advanceToNextWave, introState, godMode, autoPilot, gameTimeScale, killTargetById, equippedShipId, activeAugments } = get();
     if (screen !== "endless" && screen !== "pvp" && screen !== "sandbox") return;
     if (introState.active) return;
 
@@ -1121,24 +1270,51 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       }
     }
 
+    // Phase Hyper Beam Firing: Quét sạch quái thường và trừ 3 HP Boss
+    if (hyperBeamPhase === "firing") {
+      const updatedTargets = targets.map((t) => {
+        if (t.isDead) return t;
+        if (t.type === "MINI_BOSS") {
+          const bossHp = Math.max(0, (t.currentHp || 1) - GAME_CONFIG.PLAYER.hyperBeamBossDamage);
+          return { ...t, currentHp: bossHp, isDead: bossHp === 0 };
+        }
+        return { ...t, isDead: true };
+      });
+      set({ targets: updatedTargets });
+    }
+
+    // Kiểm tra trạng thái đóng băng (Frostbyte / Chrono Freeze)
+    const currentFreeze = get().freezeTimer;
+    const isFrozen = currentFreeze > 0;
+    if (isFrozen) {
+      const nextFreeze = Math.max(0, currentFreeze - effectiveDelta / 60);
+      set({ freezeTimer: nextFreeze });
+    }
+
     // 1. Tick Enemy Movement & Collisions
     if (!isTransitioning && gameTimeScale > 0) {
       let hasDanger = false;
       let damageTaken = 0;
       const remainingTargets: TargetWord[] = [];
       const missedList: WeakWord[] = [...weakWords];
+      const hasCryo = activeAugments.some((a) => a.id === "CRYO_PAYLOAD");
+      const speedMult = (isFrozen ? 0 : 1) * (hasCryo ? 0.65 : 1.0);
 
       targets.forEach((t) => {
         if (t.isDead) return;
 
-        const newY = t.posY + t.speed * effectiveDelta;
+        const newY = t.posY + t.speed * effectiveDelta * speedMult;
         if (newY >= GAME_CONFIG.PLAYER.dangerZoneThreshold) {
           hasDanger = true;
         }
 
         if (newY >= 100) {
           if (!godMode) {
-            damageTaken += t.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.damagePerEnemyReachBottom * 2 : GAME_CONFIG.PLAYER.damagePerEnemyReachBottom;
+            let baseDmg = t.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.damagePerEnemyReachBottom * 2 : GAME_CONFIG.PLAYER.damagePerEnemyReachBottom;
+            if (equippedShipId === "AEGIS-01") {
+              baseDmg = Math.round(baseDmg * 0.7); // Aegis: giảm 30% sát thương va chạm
+            }
+            damageTaken += baseDmg;
           }
           missedList.push({
             word: t.word,
@@ -1150,6 +1326,13 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
           remainingTargets.push({ ...t, posY: newY });
         }
       });
+
+      // Update Radar Lock-on targeting to the lowest enemy
+      const livingTargets = remainingTargets.filter((t) => !t.isDead);
+      if (livingTargets.length > 0) {
+        const lowest = livingTargets.reduce((prev, curr) => (curr.posY > prev.posY ? curr : prev), livingTargets[0]);
+        set({ lastLaserTarget: { x: lowest.posX, y: lowest.posY } });
+      }
 
       if (damageTaken > 0 && !godMode) {
         soundManager.playDamage();

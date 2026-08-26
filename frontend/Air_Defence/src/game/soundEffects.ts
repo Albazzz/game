@@ -77,15 +77,23 @@ class SoundManager {
   }
 
   private initContext() {
+    if (typeof window === "undefined" && typeof AudioContext === "undefined") return;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx();
-      this.bgmGain = this.ctx.createGain();
-      this.bgmGain.gain.setValueAtTime(this.getCalculatedBgmVolume(), this.ctx.currentTime);
-      this.bgmGain.connect(this.ctx.destination);
+      try {
+        const AudioCtx =
+          (typeof window !== "undefined" &&
+            (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)) ||
+          (typeof AudioContext !== "undefined" ? AudioContext : null);
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+          this.bgmGain = this.ctx.createGain();
+          this.bgmGain.gain.setValueAtTime(this.getCalculatedBgmVolume(), this.ctx.currentTime);
+          this.bgmGain.connect(this.ctx.destination);
+        }
+      } catch (e) {}
     }
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
+    if (this.ctx && this.ctx.state === "suspended") {
+      this.ctx.resume().catch(() => {});
     }
   }
 
@@ -123,7 +131,7 @@ class SoundManager {
   stopBgm() {
     this.isBgmPlaying = false;
     if (this.bgmIntervalId !== null) {
-      window.clearInterval(this.bgmIntervalId);
+      clearInterval(this.bgmIntervalId);
       this.bgmIntervalId = null;
     }
   }
@@ -173,7 +181,7 @@ class SoundManager {
     };
 
     playChord();
-    this.bgmIntervalId = window.setInterval(playChord, 3800);
+    this.bgmIntervalId = setInterval(playChord, 3800) as unknown as number;
   }
 
   // --- BATTLE BGM: Fast 128 BPM Arcade Driving Synthwave ---
@@ -234,7 +242,7 @@ class SoundManager {
     };
 
     playBeat();
-    this.bgmIntervalId = window.setInterval(playBeat, 230);
+    this.bgmIntervalId = setInterval(playBeat, 230) as unknown as number;
   }
 
   // --- BOSS BGM: Intense Dark Synth Boss Battle (Heavy, Fast, Aggressive) ---
@@ -292,7 +300,7 @@ class SoundManager {
     };
 
     playBossBeat();
-    this.bgmIntervalId = window.setInterval(playBossBeat, 195);
+    this.bgmIntervalId = setInterval(playBossBeat, 195) as unknown as number;
   }
 
   // ==========================================================================
