@@ -723,32 +723,24 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         screenShake ? "translate-x-1.5 translate-y-1.5 scale-[1.015]" : ""
       }`}
     >
-      {/* ⚡ STAGE 1: HYPER BEAM CHARGING & CONVERGENCE OVERLAY */}
+      {/* ⚡ STAGE 1: HYPER BEAM CHARGING OVERLAY (Chỉ hiện ở 0.9s nén năng lượng) */}
       {hyperBeamPhase === "charge" && (
-        <div className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center bg-radial from-violet-950/70 via-black/40 to-transparent backdrop-blur-[1.5px] animate-pulse">
-          <div className="text-center px-5 py-2.5 bg-black/80 rounded-2xl border border-amber-400/80 shadow-[0_0_40px_rgba(255,200,87,0.8)] backdrop-blur-md animate-pulse">
-            <p className="font-mono text-[10px] sm:text-xs font-bold text-[#ffc857] tracking-[.4em] uppercase">
-              ⚠ CHARGING ORBITAL CANNON // NẠP NĂNG LƯỢNG ⚠
+        <div className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center bg-radial from-violet-950/60 via-black/30 to-transparent backdrop-blur-[1px] animate-pulse">
+          <div className="text-center px-4 py-2 bg-black/80 rounded-2xl border border-cyan-400/80 shadow-[0_0_35px_rgba(85,244,255,0.7)] backdrop-blur-md animate-pulse">
+            <p className="font-mono text-[10px] sm:text-xs font-bold text-cyan tracking-[.35em] uppercase">
+              ⚡ HYPER BEAM // CHARGING...
             </p>
-            <h2 className="font-display text-xl sm:text-3xl font-extrabold text-white tracking-widest mt-0.5 drop-shadow-[0_0_20px_#ffc857]">
-              »» NÉN PLASMA TỐI ĐẠI ««
+            <h2 className="font-display text-lg sm:text-2xl font-extrabold text-white tracking-widest mt-0.5 drop-shadow-[0_0_15px_#55f4ff]">
+              »» NÉN NĂNG LƯỢNG CỰC ĐẠI ««
             </h2>
           </div>
         </div>
       )}
 
-      {/* ⚡ STAGE 2: EPIC HYPER BEAM SUPER-LASER BURST FLASH & BANNER */}
+      {/* ⚡ STAGE 2: PURE VISUAL BURST FLASH (Không chữ đè, tầm nhìn chùm tia thông suốt) */}
       {hyperBeamPhase === "firing" && (
-        <div className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center bg-radial from-violet-500/35 via-cyan-400/20 to-transparent mix-blend-screen animate-pulse">
-          <div className="absolute inset-0 bg-white/25 animate-in fade-in duration-75" />
-          <div className="text-center px-5 py-2.5 bg-black/70 rounded-2xl border border-cyan-300/70 shadow-[0_0_50px_rgba(85,244,255,0.9)] backdrop-blur-sm animate-bounce">
-            <p className="font-mono text-[10px] sm:text-xs font-bold text-violet-300 tracking-[.4em] uppercase">
-              MAXIMUM POWER DISCHARGE // ORBITAL MATRIX
-            </p>
-            <h2 className="font-display text-2xl sm:text-4xl font-extrabold text-cyan tracking-widest drop-shadow-[0_0_30px_#55f4ff]">
-              ⚡ HYPER BEAM ENGAGED ⚡
-            </h2>
-          </div>
+        <div className="pointer-events-none absolute inset-0 z-40 bg-radial from-violet-500/25 via-cyan-400/15 to-transparent mix-blend-screen animate-pulse">
+          <div className="absolute inset-0 bg-white/20 animate-in fade-in duration-75" />
         </div>
       )}
 
