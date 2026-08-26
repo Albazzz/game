@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { AugmentCard, AudioSettings, FloatingText, GameMode, LootItem, LootItemType, Screen, TargetWord, WeakWord } from "./types";
 import { GAME_CONFIG } from "./gameConfig";
 import { soundManager } from "./soundEffects";
+import { fetchShopDataApi, buyShipApi, equipShipApi, upgradeTalentApi, recordMatchFinishApi } from "./apiClient";
 
 export const SHIPS_CATALOG = GAME_CONFIG.SHIPS;
 
@@ -237,6 +238,7 @@ interface AirDefenseState {
   fireHyperBeam: () => void;
   selectAugment: (augment: AugmentCard) => void;
   rerollAugments: () => void;
+  syncWithBackend: () => Promise<void>;
   equipShip: (shipId: string) => void;
   buyShip: (shipId: string) => void;
   upgradeTalent: (talentType: "hull" | "coin" | "fastStart" | "reroll") => void;
@@ -796,17 +798,49 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     });
   },
 
-  equipShip: (shipId) => set({ equippedShipId: shipId }),
+  syncWithBackend: async () => {
+    try {
+      const data = await fetchShopDataApi();
+      if (data) {
+        const owned = data.ships.filter((s) => s.owned).map((s) => s.shipId);
+        set({
+          creditsBalance: data.coinsBalance,
+          equippedShipId: data.equippedShipId || "NOVA-01",
+          ownedShipIds: owned.length > 0 ? owned : ["NOVA-01"],
+          talentLevels: {
+            hull: data.extraBaseHpLevel || 0,
+            coin: data.coinBonusLevel || 0,
+            fastStart: data.fastStartLevel || 0,
+            reroll: data.rerollCountLevel || 0
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("syncWithBackend error:", err);
+    }
+  },
+
+  equipShip: (shipId) => {
+    set({ equippedShipId: shipId });
+    equipShipApi(shipId).catch(console.warn);
+  },
 
   buyShip: (shipId) => {
     const { creditsBalance, ownedShipIds } = get();
     const ship = SHIPS_CATALOG.find((s) => s.id === shipId);
     if (!ship || ownedShipIds.includes(shipId) || creditsBalance < ship.price) return;
+
     set({
       creditsBalance: creditsBalance - ship.price,
       ownedShipIds: [...ownedShipIds, shipId],
       equippedShipId: shipId
     });
+
+    buyShipApi(shipId).then((res) => {
+      if (res) {
+        set({ creditsBalance: res.coinsBalance });
+      }
+    }).catch(console.warn);
   },
 
   upgradeTalent: (talentType) => {
@@ -824,19 +858,52 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       talentLevels: updatedTalents,
       maxHp: talentType === "hull" ? maxHp + GAME_CONFIG.TALENTS.hullBonusPerLevel : maxHp
     });
+
+    const backendType = talentType === "hull" ? "HULL" : talentType === "coin" ? "COIN" : talentType === "fastStart" ? "FAST_START" : "REROLL";
+    upgradeTalentApi(backendType).then((res) => {
+      if (res) {
+        set({ creditsBalance: res.coinsBalance });
+      }
+    }).catch(console.warn);
   },
 
   resetToDeck: () => {
-    const { creditsBalance, creditsEarned } = get();
+    const { creditsBalance, creditsEarned, score, wave, bestCombo } = get();
     soundManager.switchBgm("lobby");
+    const newBalance = creditsBalance + creditsEarned;
+    const earned = creditsEarned;
+    const finalScore = score;
+    const finalWave = wave;
+    const finalCombo = bestCombo;
+
     set({
       screen: "deck",
-      creditsBalance: creditsBalance + creditsEarned,
+      creditsBalance: newBalance,
       creditsEarned: 0,
       combo: 0,
       isTransitioning: false,
       waveTransition: { active: false, phase: "none", clearedWave: 0, incomingWave: 1, isBoss: false }
     });
+
+    if (earned > 0 || finalScore > 0) {
+      recordMatchFinishApi({
+        score: finalScore,
+        wave: finalWave,
+        bestCombo: finalCombo,
+        creditsEarned: earned,
+        durationMs: 30000,
+        questionsAnswered: 10,
+        correctAnswers: 10,
+        incorrectAnswers: 0,
+        accuracyPercent: 100,
+        playMode: "SOLO",
+        difficulty: "N5"
+      }).then((res) => {
+        if (res) {
+          set({ creditsBalance: res.coinsBalance });
+        }
+      }).catch(console.warn);
+    }
   },
 
   // ==========================================================================

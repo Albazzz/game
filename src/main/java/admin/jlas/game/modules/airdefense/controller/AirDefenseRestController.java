@@ -2,6 +2,7 @@ package admin.jlas.game.modules.airdefense.controller;
 
 import admin.jlas.game.common.dto.ApiResponse;
 import admin.jlas.game.modules.airdefense.domain.AirDefenseSession;
+import admin.jlas.game.modules.airdefense.dto.AirDefenseFinishMatchRequest;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseShopView;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseStateView;
 import admin.jlas.game.modules.airdefense.dto.BuyShipRequest;
@@ -89,6 +90,14 @@ public class AirDefenseRestController {
             @RequestBody UpgradeTalentRequest request) {
         shopService.upgradeTalent(user, request.talentType());
         return ResponseEntity.ok(ApiResponse.ok("Nâng cấp Talent thành công", shopService.getShopView(user)));
+    }
+
+    @PostMapping("/match/finish")
+    public ResponseEntity<ApiResponse<AirDefenseShopView>> finishMatch(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestBody AirDefenseFinishMatchRequest request) {
+        AirDefenseShopView view = shopService.recordMatchFinish(user, request);
+        return ResponseEntity.ok(ApiResponse.ok("Lưu kết quả trận đấu thành công", view));
     }
 
     @GetMapping("/leaderboard/endless")

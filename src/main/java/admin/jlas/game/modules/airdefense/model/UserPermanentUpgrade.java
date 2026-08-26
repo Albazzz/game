@@ -8,13 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_permanent_upgrades")
-public class UserPermanentUpgrade {
+public class UserPermanentUpgrade implements Persistable<Long> {
 
     @Id
     @Column(name = "user_id")
@@ -46,7 +50,26 @@ public class UserPermanentUpgrade {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Transient
+    private boolean isNew = true;
+
     public UserPermanentUpgrade() {}
+
+    @Override
+    public Long getId() {
+        return userId;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PrePersist
+    public void markNotNew() {
+        this.isNew = false;
+    }
 
     public static UserPermanentUpgradeBuilder builder() {
         return new UserPermanentUpgradeBuilder();
@@ -84,6 +107,7 @@ public class UserPermanentUpgrade {
             u.fastStartLevel = this.fastStartLevel != null ? this.fastStartLevel : 0;
             u.equippedShipId = this.equippedShipId != null ? this.equippedShipId : "NOVA-01";
             u.updatedAt = this.updatedAt;
+            u.isNew = true;
             return u;
         }
     }

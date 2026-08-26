@@ -72,74 +72,39 @@ function Deck() {
 
   return (
     <div className="h-full flex flex-col justify-between gap-4 overflow-y-auto pr-1">
-      <div className="grid gap-4 xl:grid-cols-[1.35fr_.65fr]">
-        <Panel className="relative overflow-hidden p-5 sm:p-7">
-          <div className="absolute -right-20 -top-20 size-72 rounded-full bg-cyan-300/15 blur-3xl pointer-events-none" />
-          <Pill tone="violet">SECTOR 04 · DEEP SPACE LIVE</Pill>
-          <h1 className="font-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold leading-none">
-            THE VOID REMEMBERS<br />
-            <span className="text-cyan">EVERY WORD.</span>
-          </h1>
-          <p className="mt-3 max-w-md text-xs sm:text-sm leading-5 text-slate-300">
-            Tự động khóa mục tiêu Laser. Gõ Romaji / Hiragana tiếng Nhật để bắn nổ quái vật không gian.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Action onClick={() => startMatch("endless")}>BẮT ĐẦU ENDLESS →</Action>
-            <Action muted onClick={() => setScreen("queue")}>ĐẤU TRƯỜNG ARENA</Action>
-          </div>
-          <div className="mt-6 grid max-w-md grid-cols-3 border-t border-white/10 pt-4">
-            <Stat label="BEST WAVE" value="18" />
-            <Stat label="ACCURACY" value="94.2%" tone="violet" />
-            <Stat label="CREDITS" value={`◉ ${creditsBalance}`} tone="amber" />
-          </div>
-        </Panel>
+      <Panel className="relative overflow-hidden p-6 sm:p-8">
+        <div className="absolute -right-20 -top-20 size-80 rounded-full bg-cyan-300/15 blur-3xl pointer-events-none" />
+        <Pill tone="violet">SECTOR 04 · DEEP SPACE LIVE</Pill>
+        <h1 className="font-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold leading-none">
+          THE VOID REMEMBERS<br />
+          <span className="text-cyan">EVERY WORD.</span>
+        </h1>
+        <p className="mt-3 max-w-xl text-xs sm:text-sm leading-5 text-slate-300">
+          Tự động khóa mục tiêu Laser. Gõ Romaji / Hiragana tiếng Nhật để bắn nổ quái vật không gian và tích lũy Credits vĩnh viễn vào Database.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Action onClick={() => startMatch("endless")}>BẮT ĐẦU ENDLESS →</Action>
+          <Action muted onClick={() => setScreen("queue")}>ĐẤU TRƯỜNG ARENA</Action>
+        </div>
+        <div className="mt-6 grid max-w-lg grid-cols-3 border-t border-white/10 pt-4">
+          <Stat label="TÀU CHIẾN" value={currentShip.name} />
+          <Stat label="HP CƠ BẢN" value={`HP ${currentShip.hp}`} tone="violet" />
+          <Stat label="SỐ DƯ CREDITS" value={`◉ ${creditsBalance}`} tone="amber" />
+        </div>
+      </Panel>
 
+      <div className="grid gap-4 lg:grid-cols-[.85fr_1.15fr]">
         <Panel className="p-5 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
+            <p className="font-mono text-[9px] text-slate-400 mb-2">TÀU CHIẾN ĐANG TRANG BỊ</p>
+            <ShipImage spritePath={currentShip.spritePath} name={currentShip.name} />
+            <div className="mt-3 flex items-center justify-between">
               <div>
-                <p className="font-mono text-[9px] text-slate-400">NHIỆM VỤ HÀNG NGÀY</p>
-                <h2 className="font-display text-lg font-bold">N5 // SPACE PATROL</h2>
+                <h3 className="font-display text-base font-bold">{currentShip.name}</h3>
+                <p className="text-xs text-slate-400">{currentShip.role} · HP {currentShip.hp} · {currentShip.speed}× SPEED</p>
               </div>
-              <Pill>03:24:17</Pill>
+              <Action muted onClick={() => setScreen("hangar")}>ĐỔI TÀU</Action>
             </div>
-            <div className="mt-5 space-y-3">
-              {[
-                { text: "Vượt qua Wave 10", progress: "7 / 10", pct: 70 },
-                { text: "Độ chính xác trên 90%", progress: "94 / 90", pct: 100 },
-                { text: "Thu thập 80 Credits", progress: "42 / 80", pct: 53 }
-              ].map((task) => (
-                <div key={task.text}>
-                  <div className="mb-1 flex justify-between text-[11px] text-slate-300">
-                    <span>{task.text}</span>
-                    <span className="font-mono text-[10px]">{task.progress}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-cyan-300" style={{ width: `${task.pct}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-4 border-t border-white/10 pt-3">
-            <p className="font-mono text-[9px] text-slate-500">PHẦN THƯỞNG</p>
-            <p className="font-display text-base text-[#ffc857]">
-              + 120 CREDITS <span className="text-xs text-slate-300">/ AUGMENT CHIP</span>
-            </p>
-          </div>
-        </Panel>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
-        <Panel className="p-5">
-          <p className="font-mono text-[9px] text-slate-400 mb-2">TÀU CHIẾN ĐANG TRANG BỊ</p>
-          <ShipImage spritePath={currentShip.spritePath} name={currentShip.name} />
-          <div className="mt-3 flex items-center justify-between">
-            <div>
-              <h3 className="font-display text-base font-bold">{currentShip.name}</h3>
-              <p className="text-xs text-slate-400">{currentShip.role} · HP {currentShip.hp}</p>
-            </div>
-            <Action muted onClick={() => setScreen("hangar")}>ĐỔI TÀU</Action>
           </div>
         </Panel>
 
@@ -1270,7 +1235,21 @@ function DevSandboxView() {
 }
 
 export default function App() {
-  const { screen, setScreen, creditsBalance, bgmEnabled, toggleBgm, isSettingsOpen, closeSettings, openSettings } = useAirDefenseStore();
+  const {
+    screen,
+    setScreen,
+    creditsBalance,
+    bgmEnabled,
+    toggleBgm,
+    isSettingsOpen,
+    closeSettings,
+    openSettings,
+    syncWithBackend
+  } = useAirDefenseStore();
+
+  useEffect(() => {
+    syncWithBackend();
+  }, [syncWithBackend]);
 
   const content: Record<Screen, ReactNode> = {
     deck: <Deck />,
