@@ -1,4 +1,4 @@
-import React, { useState, type ReactNode } from "react";
+import React, { useState, useEffect, type ReactNode } from "react";
 import { useAirDefenseStore, SHIPS_CATALOG } from "./game/useAirDefenseStore";
 import { PixiBattleCanvas } from "./game/PixiBattleCanvas";
 import { Screen } from "./game/types";
@@ -322,13 +322,24 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
     openSettings
   } = useAirDefenseStore();
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === "Shift" || e.code === "ShiftLeft" || e.code === "ShiftRight") && hyperBeamCharge >= GAME_CONFIG.PLAYER.hyperBeamMaxCharge) {
+        e.preventDefault();
+        fireHyperBeam();
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [hyperBeamCharge, fireHyperBeam]);
+
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.nativeEvent.isComposing) {
       if (input.trim()) {
         submitAnswer(input);
         setInput("");
       }
-    } else if (e.key === " " && input === "" && hyperBeamCharge >= GAME_CONFIG.PLAYER.hyperBeamMaxCharge) {
+    } else if ((e.key === "Shift" || e.code === "ShiftLeft" || e.code === "ShiftRight") && hyperBeamCharge >= GAME_CONFIG.PLAYER.hyperBeamMaxCharge) {
       e.preventDefault();
       fireHyperBeam();
     }
@@ -402,8 +413,9 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
                     ? "border-violet-400 bg-violet-500 text-white animate-pulse shadow-[0_0_16px_rgba(169,121,255,.6)]"
                     : "border-white/10 bg-white/5 text-slate-500 cursor-not-allowed"
                 }`}
+                title="Bấm phím [SHIFT] để kích hoạt Siêu Pháo Laser"
               >
-                ⚡ BẮN BEAM
+                ⚡ [SHIFT] BẮN BEAM
               </button>
             </div>
 

@@ -243,7 +243,7 @@ interface AirDefenseState {
   resetToDeck: () => void;
   tickGameLoop: (delta: number) => void;
   advanceToNextWave: () => void;
-  spawnLoot: (x: number, y: number, isBoss?: boolean) => void;
+  spawnLoot: (x: number, y: number, isBoss?: boolean, allowHyperOrb?: boolean) => void;
 
   // 🛠 DEV SANDBOX ACTIONS
   toggleGodMode: () => void;
@@ -484,7 +484,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     }, 3800);
   },
 
-  spawnLoot: (x: number, y: number, isBoss = false) => {
+  spawnLoot: (x: number, y: number, isBoss = false, allowHyperOrb = true) => {
     const { lootItems } = get();
     const newItems: LootItem[] = [];
     const count = isBoss ? GAME_CONFIG.LOOT.bossLootMultiplier : 1 + (Math.random() < 0.4 ? 1 : 0);
@@ -494,7 +494,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       const roll = Math.random();
       if (roll < GAME_CONFIG.LOOT.repairDropChance) {
         type = "REPAIR_PACK";
-      } else if (roll < GAME_CONFIG.LOOT.repairDropChance + GAME_CONFIG.LOOT.hyperOrbDropChance) {
+      } else if (allowHyperOrb && roll < GAME_CONFIG.LOOT.repairDropChance + GAME_CONFIG.LOOT.hyperOrbDropChance) {
         type = "HYPER_ORB";
       }
 
@@ -713,18 +713,18 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
           if (currentHp <= damage) {
             // Boss bị tiêu diệt
             updatedTargets.push({ ...t, currentHp: 0, isDead: true });
-            spawnLoot(t.posX, Math.max(10, t.posY), true);
+            spawnLoot(t.posX, Math.max(10, t.posY), true, false);
           } else {
             // Boss còn sống sau khi trừ 3 HP
             const remainingHp = currentHp - damage;
             updatedTargets.push({ ...t, currentHp: remainingHp, isDead: false });
-            // Rơi một lượng đá quý thưởng khi bắn trúng Boss
-            spawnLoot(t.posX, Math.max(10, t.posY), false);
+            // Rơi một lượng đá quý thưởng khi bắn trúng Boss (không nạp Hyper Beam)
+            spawnLoot(t.posX, Math.max(10, t.posY), false, false);
           }
         } else {
           // Quái vật thường bị hủy diệt tức thì
           updatedTargets.push({ ...t, isDead: true });
-          spawnLoot(t.posX, Math.max(10, t.posY), false);
+          spawnLoot(t.posX, Math.max(10, t.posY), false, false);
         }
       });
 
@@ -1179,7 +1179,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         floatingTexts: nextFloating,
         creditsEarned: creditsEarned + creditAdd,
         hp: Math.min(maxHp, hp + hpAdd),
-        hyperBeamCharge: Math.min(100, hyperBeamCharge + beamAdd)
+        hyperBeamCharge: hyperBeamPhase === "idle" ? Math.min(100, hyperBeamCharge + beamAdd) : 0
       });
     }
 

@@ -419,12 +419,14 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
               enemyCont.addChild(bossHpBar);
             }
 
-            // Click-to-Kill (Hỗ trợ Developer & Quick Aim)
+            // Click-to-Kill chỉ kích hoạt duy nhất trong phòng thí nghiệm Dev Sandbox
             enemyCont.eventMode = "static";
-            enemyCont.cursor = "crosshair";
+            enemyCont.cursor = useAirDefenseStore.getState().screen === "sandbox" ? "crosshair" : "default";
             enemyCont.on("pointerdown", (e) => {
-              e.stopPropagation();
-              useAirDefenseStore.getState().killTargetById(t.id);
+              if (useAirDefenseStore.getState().screen === "sandbox") {
+                e.stopPropagation();
+                useAirDefenseStore.getState().killTargetById(t.id);
+              }
             });
 
             enemiesLayer.addChild(enemyCont);
