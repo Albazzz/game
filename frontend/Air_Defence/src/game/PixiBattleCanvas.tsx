@@ -27,6 +27,8 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
   const floatingTexts = useAirDefenseStore((s) => s.floatingTexts);
   const tickGameLoop = useAirDefenseStore((s) => s.tickGameLoop);
   const skipIntro = useAirDefenseStore((s) => s.skipIntro);
+  const hyperBeamActive = useAirDefenseStore((s) => s.hyperBeamActive);
+  const hyperBeamPhase = useAirDefenseStore((s) => s.hyperBeamPhase);
 
   useEffect(() => {
     let isMounted = true;
@@ -207,7 +209,9 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
 
       const activeExplosions: ExplosionAnim[] = [];
       const laserG = new Graphics();
+      const hyperBeamG = new Graphics();
       fxLayer.addChild(laserG);
+      fxLayer.addChild(hyperBeamG);
 
       // Helper: Trigger Explosion Animation
       const spawnExplosion = (x: number, y: number) => {
@@ -415,12 +419,14 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
               enemyCont.addChild(bossHpBar);
             }
 
-            // Click-to-Kill (Hỗ trợ Developer & Quick Aim)
+            // Click-to-Kill chỉ kích hoạt duy nhất trong phòng thí nghiệm Dev Sandbox
             enemyCont.eventMode = "static";
-            enemyCont.cursor = "crosshair";
+            enemyCont.cursor = useAirDefenseStore.getState().screen === "sandbox" ? "crosshair" : "default";
             enemyCont.on("pointerdown", (e) => {
-              e.stopPropagation();
-              useAirDefenseStore.getState().killTargetById(t.id);
+              if (useAirDefenseStore.getState().screen === "sandbox") {
+                e.stopPropagation();
+                useAirDefenseStore.getState().killTargetById(t.id);
+              }
             });
 
             enemiesLayer.addChild(enemyCont);
@@ -581,6 +587,104 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             .lineTo(endX, endY)
             .stroke({ color: 0xa979ff, width: GAME_CONFIG.VISUALS.laserGlowWidth, alpha: 0.35 });
         }
+
+        // Hyper Beam Ultimate Super-Laser Render
+        const beamPhase = useAirDefenseStore.getState().hyperBeamPhase;
+        const isHyperBeam = beamPhase === "firing";
+        const isCharging = beamPhase === "charge";
+
+        hyperBeamG.clear();
+
+        if (isCharging) {
+          const px = playerShipContainer.x;
+          const py = playerShipContainer.y - 20;
+          const pulse = 0.5 + Math.sin(Date.now() * 0.08) * 0.5;
+
+          // 1. Converging Energy Charge Vortex Rings
+          for (let r = 1; r <= 3; r++) {
+            const rad = 70 - ((Date.now() * 0.06 + r * 20) % 60);
+            if (rad > 6) {
+              hyperBeamG
+                .circle(px, py, rad)
+                .stroke({ color: 0x55f4ff, width: 2, alpha: (1 - rad / 70) * 0.85 });
+            }
+          }
+
+          // 2. High-Density Plasma Core Orb charging at nozzle
+          hyperBeamG.circle(px, py, 14 + pulse * 10).fill({ color: 0xffffff, alpha: 0.95 });
+          hyperBeamG.circle(px, py, 28 + pulse * 16).fill({ color: 0xa979ff, alpha: 0.45 });
+
+          // 3. Lightning tendrils gathering inwards
+          for (let i = 0; i < 4; i++) {
+            const angle = (Date.now() * 0.005 + i * (Math.PI / 2)) % (Math.PI * 2);
+            const dist = 40 + Math.random() * 25;
+            hyperBeamG
+              .moveTo(px + Math.cos(angle) * dist, py + Math.sin(angle) * dist)
+              .lineTo(px, py)
+              .stroke({ color: 0x55f4ff, width: 1.5, alpha: 0.8 });
+          }
+        } else if (isHyperBeam) {
+          const px = playerShipContainer.x;
+          const py = playerShipContainer.y - 22;
+          const topY = -150;
+          const pulse = 0.85 + Math.sin(Date.now() * 0.04) * 0.15;
+
+          // 1. Giant Outer Purple/Violet Plasma Corona
+          hyperBeamG
+            .moveTo(px, py)
+            .lineTo(px, topY)
+            .stroke({
+              color: 0x9d4edd,
+              width: GAME_CONFIG.VISUALS.hyperBeamAuraWidth * pulse,
+              alpha: 0.48
+            });
+
+          // 2. Cyan High-Energy Charged Core
+          hyperBeamG
+            .moveTo(px, py)
+            .lineTo(px, topY)
+            .stroke({
+              color: 0x00f0ff,
+              width: GAME_CONFIG.VISUALS.hyperBeamMidWidth * pulse,
+              alpha: 0.88
+            });
+
+          // 3. Ultra-Dense Pure White Nuclear Laser Beam
+          hyperBeamG
+            .moveTo(px, py)
+            .lineTo(px, topY)
+            .stroke({
+              color: 0xffffff,
+              width: GAME_CONFIG.VISUALS.hyperBeamCoreWidth,
+              alpha: 1.0
+            });
+
+          // 4. Energy Charge Wave Rings at Cannon Nozzle
+          for (let r = 1; r <= GAME_CONFIG.VISUALS.hyperBeamRingsCount; r++) {
+            const ringRadius = (16 * r + ((Date.now() * 0.08) % 24)) * pulse;
+            hyperBeamG
+              .circle(px, py, ringRadius)
+              .stroke({ color: 0x00f0ff, width: 3 - r * 0.5, alpha: 0.9 - r * 0.18 });
+          }
+
+          // 5. Blinding Muzzle Flash Core Flare
+          hyperBeamG
+            .circle(px, py, 34 * pulse)
+            .fill({ color: 0xffffff, alpha: 0.95 });
+          hyperBeamG
+            .circle(px, py, 60 * pulse)
+            .fill({ color: 0x7b2cbf, alpha: 0.65 });
+
+          // 6. Searing Electric Arcs & Lightning Discharges across the screen
+          for (let s = 0; s < 10; s++) {
+            const arcY = topY + ((Date.now() * 1.5 + s * 120) % (py - topY));
+            const arcSpread = (Math.random() - 0.5) * (GAME_CONFIG.VISUALS.hyperBeamMidWidth * 1.6);
+            hyperBeamG
+              .moveTo(px, arcY)
+              .lineTo(px + arcSpread, arcY + (Math.random() - 0.5) * 20)
+              .stroke({ color: 0xffffff, width: 2, alpha: 0.85 });
+          }
+        }
       });
 
       // Handle Resize smoothly
@@ -621,6 +725,27 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         screenShake ? "translate-x-1.5 translate-y-1.5 scale-[1.015]" : ""
       }`}
     >
+      {/* ⚡ STAGE 1: HYPER BEAM CHARGING OVERLAY (Chỉ hiện ở 0.9s nén năng lượng) */}
+      {hyperBeamPhase === "charge" && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center bg-radial from-violet-950/60 via-black/30 to-transparent backdrop-blur-[1px] animate-pulse">
+          <div className="text-center px-4 py-2 bg-black/80 rounded-2xl border border-cyan-400/80 shadow-[0_0_35px_rgba(85,244,255,0.7)] backdrop-blur-md animate-pulse">
+            <p className="font-mono text-[10px] sm:text-xs font-bold text-cyan tracking-[.35em] uppercase">
+              ⚡ HYPER BEAM // CHARGING...
+            </p>
+            <h2 className="font-display text-lg sm:text-2xl font-extrabold text-white tracking-widest mt-0.5 drop-shadow-[0_0_15px_#55f4ff]">
+              »» NÉN NĂNG LƯỢNG CỰC ĐẠI ««
+            </h2>
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ STAGE 2: PURE VISUAL BURST FLASH (Không chữ đè, tầm nhìn chùm tia thông suốt) */}
+      {hyperBeamPhase === "firing" && (
+        <div className="pointer-events-none absolute inset-0 z-40 bg-radial from-violet-500/25 via-cyan-400/15 to-transparent mix-blend-screen animate-pulse">
+          <div className="absolute inset-0 bg-white/20 animate-in fade-in duration-75" />
+        </div>
+      )}
+
       {/* Danger Zone Flashing Vignette */}
       {dangerZoneActive && (
         <div className="pointer-events-none absolute inset-0 border-4 border-rose-500/80 shadow-[inset_0_0_60px_rgba(255,77,109,.6)] animate-pulse z-10" />
@@ -649,9 +774,9 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
           <div className="text-center px-4 max-w-lg">
             {introState.phase === "boot" && (
               <div className="animate-pulse">
-                <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">SYSTEM TELEMETRY SCAN</p>
+                <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">QUÉT DỮ LIỆU HỆ THỐNG</p>
                 <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                  AI DEFENSE MATRIX : ONLINE
+                  MA TRẬN PHÒNG THỦ : TRỰC TUYẾN
                 </h2>
                 <div className="mt-3 flex justify-center gap-2">
                   <span className="h-1.5 w-12 rounded-full bg-cyan animate-pulse" />
@@ -663,19 +788,19 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
 
             {introState.phase === "warpin" && (
               <div className="animate-bounce">
-                <p className="font-mono text-xs text-[#ffc857] tracking-[.35em] uppercase font-bold">WARP INGRESS</p>
+                <p className="font-mono text-xs text-[#ffc857] tracking-[.35em] uppercase font-bold">BƯỚC NHẢY VŨ TRỤ</p>
                 <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white drop-shadow-[0_0_30px_rgba(85,244,255,0.8)]">
-                  FLAGSHIP DEPLOYED
+                  CHIẾN HẠM ĐÃ XUẤT KÍCH
                 </h2>
-                <p className="font-mono text-[10px] text-slate-300 mt-1">VĂN TỐC TÁC CHIẾN ĐÃ SẴN SÀNG</p>
+                <p className="font-mono text-[10px] text-slate-300 mt-1">VẬN TỐC TÁC CHIẾN ĐÃ SẴN SÀNG</p>
               </div>
             )}
 
             {introState.phase === "ready" && (
               <div className="animate-pulse">
-                <p className="font-mono text-xs text-rose-400 tracking-[.4em] uppercase font-bold">SECTOR 01 ENGAGED</p>
+                <p className="font-mono text-xs text-rose-400 tracking-[.4em] uppercase font-bold">KHỞI ĐỘNG VÙNG CHIẾN 01</p>
                 <h2 className="font-display text-5xl sm:text-6xl font-extrabold text-cyan drop-shadow-[0_0_40px_rgba(85,244,255,1)]">
-                  ENGAGE!
+                  XUẤT TRẬN!
                 </h2>
               </div>
             )}
@@ -684,22 +809,22 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
       )}
 
       {/* Cinematic Wave Transition Overlay */}
-      {waveTransition.active && !introState.active && (
+      {waveTransition.active && !introState.active && hyperBeamPhase === "idle" && (
         <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300">
           {waveTransition.phase === "cleared" && (
             <div className="text-center animate-pulse">
-              <p className="font-mono text-xs text-[#ffc857] tracking-[.3em] uppercase">SECTOR DEFENDED · +1,000 PTS</p>
+              <p className="font-mono text-xs text-[#ffc857] tracking-[.3em] uppercase">BẢO VỆ THÀNH CÔNG · +1.000 ĐIỂM</p>
               <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-cyan tracking-wider drop-shadow-[0_0_30px_rgba(85,244,255,0.8)]">
-                WAVE {waveTransition.clearedWave.toString().padStart(2, "0")} CLEARED
+                VƯỢT QUA LÀN SÓNG {waveTransition.clearedWave.toString().padStart(2, "0")}
               </h2>
             </div>
           )}
 
           {waveTransition.phase === "warp" && (
             <div className="text-center animate-bounce">
-              <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">HYPERDRIVE ACCELERATION</p>
+              <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">GIA TỐC SIÊU KHÔNG GIAN</p>
               <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white tracking-widest drop-shadow-[0_0_40px_rgba(255,255,255,0.9)]">
-                »» WARPING TO SECTOR {waveTransition.incomingWave.toString().padStart(2, "0")} ««
+                »» TIẾN VÀO KHU VỰC {waveTransition.incomingWave.toString().padStart(2, "0")} ««
               </h2>
             </div>
           )}
@@ -708,17 +833,17 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             <div className="text-center">
               {waveTransition.isBoss ? (
                 <div className="animate-pulse">
-                  <p className="font-mono text-xs text-rose-400 tracking-[.35em] uppercase font-bold">⚠ EXTREME THREAT LEVEL ⚠</p>
+                  <p className="font-mono text-xs text-rose-400 tracking-[.35em] uppercase font-bold">⚠ MỨC ĐỘ NGUY HIỂM TỐI CAO ⚠</p>
                   <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-rose-500 tracking-wider drop-shadow-[0_0_40px_rgba(255,51,102,0.9)]">
-                    DREADNOUGHT BOSS INBOUND
+                    CHIẾN HẠM BOSS XUẤT HIỆN
                   </h2>
                   <p className="font-mono text-xs text-rose-200 mt-1">GÕ CHUỖI 5 TỪ VỰNG ĐỂ TIÊU DIỆT CHIẾN HẠM KHỔNG LỒ</p>
                 </div>
               ) : (
                 <div className="animate-pulse">
-                  <p className="font-mono text-xs text-cyan tracking-[.3em] uppercase">HOSTILE RECON SIGNATURES DETECTED</p>
+                  <p className="font-mono text-xs text-cyan tracking-[.3em] uppercase">PHÁT HIỆN HẠM ĐỘI QUÁI VẬT MỚI</p>
                   <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-cyan tracking-wider drop-shadow-[0_0_30px_rgba(85,244,255,0.8)]">
-                    WAVE {waveTransition.incomingWave.toString().padStart(2, "0")} INBOUND
+                    LÀN SÓNG {waveTransition.incomingWave.toString().padStart(2, "0")} TIẾP CẬN
                   </h2>
                 </div>
               )}

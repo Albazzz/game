@@ -1,4 +1,4 @@
-export type Screen = "deck" | "hangar" | "talent" | "shop" | "queue" | "endless" | "pvp" | "augment" | "debrief" | "rank" | "settings" | "sandbox";
+export type Screen = "deck" | "hangar" | "talent" | "shop" | "queue" | "endless" | "pvp" | "augment" | "debrief" | "rank" | "settings" | "sandbox" | "guide";
 
 export type GameMode = "endless" | "pvp";
 

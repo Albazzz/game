@@ -2,23 +2,30 @@ package admin.jlas.game.modules.airdefense.service;
 
 import admin.jlas.game.common.exception.ApiException;
 import admin.jlas.game.common.exception.ErrorCode;
+import admin.jlas.game.modules.airdefense.dto.AirDefenseFinishMatchRequest;
+import admin.jlas.game.modules.airdefense.dto.AirDefenseLeaderboardItem;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseShopView;
+import admin.jlas.game.modules.airdefense.model.AirDefenseResult;
 import admin.jlas.game.modules.airdefense.model.AirDefenseSpaceship;
 import admin.jlas.game.modules.airdefense.model.UserPermanentUpgrade;
 import admin.jlas.game.modules.airdefense.model.UserSpaceship;
+import admin.jlas.game.modules.airdefense.repository.AirDefenseResultRepository;
 import admin.jlas.game.modules.airdefense.repository.AirDefenseSpaceshipRepository;
 import admin.jlas.game.modules.airdefense.repository.UserPermanentUpgradeRepository;
 import admin.jlas.game.modules.airdefense.repository.UserSpaceshipRepository;
 import admin.jlas.game.modules.auth.model.User;
 import admin.jlas.game.modules.auth.repository.UserRepository;
 import admin.jlas.game.modules.auth.security.UserPrincipal;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class AirDefenseShopService {
@@ -27,15 +34,18 @@ public class AirDefenseShopService {
     private final UserSpaceshipRepository userSpaceshipRepository;
     private final UserPermanentUpgradeRepository upgradeRepository;
     private final UserRepository userRepository;
+    private final AirDefenseResultRepository resultRepository;
 
     public AirDefenseShopService(AirDefenseSpaceshipRepository spaceshipRepository,
                                  UserSpaceshipRepository userSpaceshipRepository,
                                  UserPermanentUpgradeRepository upgradeRepository,
-                                 UserRepository userRepository) {
+                                 UserRepository userRepository,
+                                 AirDefenseResultRepository resultRepository) {
         this.spaceshipRepository = spaceshipRepository;
         this.userSpaceshipRepository = userSpaceshipRepository;
         this.upgradeRepository = upgradeRepository;
         this.userRepository = userRepository;
+        this.resultRepository = resultRepository;
     }
 
     @Transactional
@@ -161,5 +171,205 @@ public class AirDefenseShopService {
         UserPermanentUpgrade upgrade = getOrCreateUpgrade(userId);
         upgrade.setCoinsBalance(upgrade.getCoinsBalance() + amount);
         upgradeRepository.save(upgrade);
+    }
+
+    @Transactional
+    public AirDefenseShopView recordMatchFinish(UserPrincipal principal, AirDefenseFinishMatchRequest req) {
+        Long userId = principal.getUserId();
+        UserPermanentUpgrade upgrade = getOrCreateUpgrade(userId);
+
+        if (req != null && req.creditsEarned() > 0) {
+            upgrade.setCoinsBalance(upgrade.getCoinsBalance() + req.creditsEarned());
+            upgrade.setUpdatedAt(LocalDateTime.now());
+            upgradeRepository.save(upgrade);
+        }
+
+        if (req != null && req.score() > 0) {
+            User user = userRepository.findById(userId).orElse(null);
+            AirDefenseResult result = AirDefenseResult.builder()
+                    .sessionId("solo_" + UUID.randomUUID().toString().substring(0, 8))
+                    .user(user)
+                    .playMode(req.playMode() != null ? req.playMode() : "SOLO")
+                    .objective("SURVIVAL")
+                    .difficulty(req.difficulty() != null ? req.difficulty() : "N5")
+                    .answerMode("KANJI_TO_HIRAGANA")
+                    .jlptLevel(req.difficulty() != null ? req.difficulty() : "N5")
+                    .outcome("FINISHED")
+                    .hpRemaining(0)
+                    .score(req.score())
+                    .questionsAnswered(req.questionsAnswered())
+                    .correctAnswers(req.correctAnswers())
+                    .incorrectAnswers(req.incorrectAnswers())
+                    .accuracyPercent(req.accuracyPercent())
+                    .bestCombo(req.bestCombo())
+                    .durationMs(req.durationMs())
+                    .ranked(false)
+                    .winner(false)
+                    .finishedAt(LocalDateTime.now())
+                    .build();
+            resultRepository.save(result);
+        }
+
+        return getShopView(principal);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AirDefenseLeaderboardItem> getEndlessLeaderboard(UserPrincipal principal) {
+        Long currentUserId = principal != null ? principal.getUserId() : null;
+        List<AirDefenseResult> topResults = resultRepository.findTopEndlessScores(PageRequest.of(0, 50));
+
+        List<AirDefenseLeaderboardItem> items = new ArrayList<>();
+        Set<Long> seenUserIds = new HashSet<>();
+
+        for (AirDefenseResult res : topResults) {
+            User user = res.getUser();
+            Long userId = user != null ? user.getUserId() : null;
+            if (userId != null) {
+                if (seenUserIds.contains(userId)) {
+                    continue; // Mỗi phi công chỉ xuất hiện 1 lần với kỷ lục điểm cao nhất
+                }
+                seenUserIds.add(userId);
+            }
+
+            String name = "PILOT";
+            if (user != null) {
+                if (user.getFullName() != null && !user.getFullName().isBlank()) {
+                    name = user.getFullName();
+                } else if (user.getEmail() != null) {
+                    name = user.getEmail().split("@")[0].toUpperCase();
+                }
+            }
+
+            String shipId = "NOVA-01";
+            if (userId != null) {
+                UserPermanentUpgrade up = upgradeRepository.findById(userId).orElse(null);
+                if (up != null && up.getEquippedShipId() != null) {
+                    shipId = up.getEquippedShipId();
+                }
+            }
+
+            AirDefenseSpaceship ship = spaceshipRepository.findById(shipId).orElse(null);
+            String shipName = ship != null ? ship.getName() : "NOVA-01 KITE";
+            String shipTone = ship != null && ship.getColorTheme() != null ? ship.getColorTheme() : "cyan";
+
+            int wave = Math.max(1, (res.getScore() / 5000) + 1);
+            boolean isCur = currentUserId != null && currentUserId.equals(userId);
+
+            items.add(new AirDefenseLeaderboardItem(
+                    0,
+                    userId,
+                    name,
+                    shipId,
+                    shipName,
+                    shipTone,
+                    res.getScore(),
+                    wave,
+                    res.getBestCombo() != null ? res.getBestCombo() : 0,
+                    res.getAccuracyPercent() != null ? res.getAccuracyPercent() : 0,
+                    "PILOT",
+                    isCur
+            ));
+        }
+
+        // Gán thứ hạng 1, 2, 3... chuẩn xác
+        List<AirDefenseLeaderboardItem> rankedList = new ArrayList<>();
+        int rank = 1;
+        for (AirDefenseLeaderboardItem it : items) {
+            rankedList.add(new AirDefenseLeaderboardItem(
+                    rank++,
+                    it.userId(),
+                    it.displayName(),
+                    it.shipId(),
+                    it.shipName(),
+                    it.shipTone(),
+                    it.score(),
+                    it.waveReached(),
+                    it.bestCombo(),
+                    it.accuracyPercent(),
+                    it.rankTier(),
+                    it.isCurrentUser()
+            ));
+        }
+
+        return rankedList;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AirDefenseLeaderboardItem> getRankedLeaderboard(UserPrincipal principal) {
+        Long currentUserId = principal != null ? principal.getUserId() : null;
+        List<AirDefenseResult> topResults = resultRepository.findTopRankedWinners(PageRequest.of(0, 50));
+
+        List<AirDefenseLeaderboardItem> items = new ArrayList<>();
+        Set<Long> seenUserIds = new HashSet<>();
+
+        for (AirDefenseResult res : topResults) {
+            User user = res.getUser();
+            Long userId = user != null ? user.getUserId() : null;
+            if (userId != null) {
+                if (seenUserIds.contains(userId)) {
+                    continue; // Mỗi phi công chỉ xuất hiện 1 lần duy nhất
+                }
+                seenUserIds.add(userId);
+            }
+
+            String name = "PILOT";
+            if (user != null) {
+                if (user.getFullName() != null && !user.getFullName().isBlank()) {
+                    name = user.getFullName();
+                } else if (user.getEmail() != null) {
+                    name = user.getEmail().split("@")[0].toUpperCase();
+                }
+            }
+
+            String shipId = "NOVA-01";
+            if (userId != null) {
+                UserPermanentUpgrade up = upgradeRepository.findById(userId).orElse(null);
+                if (up != null && up.getEquippedShipId() != null) {
+                    shipId = up.getEquippedShipId();
+                }
+            }
+
+            AirDefenseSpaceship ship = spaceshipRepository.findById(shipId).orElse(null);
+            String shipName = ship != null ? ship.getName() : "NOVA-01 KITE";
+            String shipTone = ship != null && ship.getColorTheme() != null ? ship.getColorTheme() : "cyan";
+
+            boolean isCur = currentUserId != null && currentUserId.equals(userId);
+
+            items.add(new AirDefenseLeaderboardItem(
+                    0,
+                    userId,
+                    name,
+                    shipId,
+                    shipName,
+                    shipTone,
+                    res.getScore(),
+                    1,
+                    res.getBestCombo() != null ? res.getBestCombo() : 0,
+                    res.getAccuracyPercent() != null ? res.getAccuracyPercent() : 0,
+                    "CELESTIAL",
+                    isCur
+            ));
+        }
+
+        List<AirDefenseLeaderboardItem> rankedList = new ArrayList<>();
+        int rank = 1;
+        for (AirDefenseLeaderboardItem it : items) {
+            rankedList.add(new AirDefenseLeaderboardItem(
+                    rank++,
+                    it.userId(),
+                    it.displayName(),
+                    it.shipId(),
+                    it.shipName(),
+                    it.shipTone(),
+                    it.score(),
+                    it.waveReached(),
+                    it.bestCombo(),
+                    it.accuracyPercent(),
+                    it.rankTier(),
+                    it.isCurrentUser()
+            ));
+        }
+
+        return rankedList;
     }
 }
