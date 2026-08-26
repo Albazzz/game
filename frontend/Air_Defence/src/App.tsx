@@ -177,11 +177,15 @@ function Deck() {
 }
 
 function Hangar() {
-  const { equippedShipId, ownedShipIds, equipShip, setScreen } = useAirDefenseStore();
+  const { equippedShipId, ownedShipIds, equipShip, buyShip, creditsBalance } = useAirDefenseStore();
 
   return (
     <div className="h-full flex flex-col overflow-y-auto pr-1">
-      <Header eyebrow="NHÀ CHỨA TÀU / HANGAR" title="Bộ Sưu Tập Phi Thuyền" detail="Mỗi tàu chiến mang đến tốc độ rơi đạn, lượng giáp và nội tại đặc trưng." />
+      <Header
+        eyebrow={`SỐ DƯ CREDITS: ◉ ${creditsBalance}`}
+        title="Nhà Chứa Tàu (Hangar)"
+        detail="Tự do mua và trang bị bất kỳ phi thuyền nào mà không cần theo thứ tự."
+      />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 flex-1">
         {SHIPS_CATALOG.map((ship) => {
           const owned = ownedShipIds.includes(ship.id);
@@ -200,10 +204,16 @@ function Hangar() {
               <div className="mt-4">
                 {owned ? (
                   <Action onClick={() => equipShip(ship.id)} muted={isEquipped} className="w-full">
-                    {isEquipped ? "ĐANG TRANG BỊ" : "TRANG BỊ TÀU"}
+                    {isEquipped ? "✓ ĐANG TRANG BỊ" : "TRANG BỊ TÀU"}
                   </Action>
                 ) : (
-                  <Action onClick={() => setScreen("shop")} className="w-full">MỞ KHÓA · {ship.price} ◉</Action>
+                  <Action
+                    onClick={() => buyShip(ship.id)}
+                    disabled={creditsBalance < ship.price}
+                    className="w-full"
+                  >
+                    MUA TÀU · {ship.price} ◉
+                  </Action>
                 )}
               </div>
             </Panel>
@@ -256,54 +266,52 @@ function TalentLab() {
 }
 
 function SupplyDock() {
-  const { creditsBalance, ownedShipIds, buyShip } = useAirDefenseStore();
-  const unowned = SHIPS_CATALOG.filter((s) => !ownedShipIds.includes(s.id));
+  const { creditsBalance, ownedShipIds, buyShip, equipShip, equippedShipId } = useAirDefenseStore();
 
   return (
     <div className="h-full flex flex-col overflow-y-auto pr-1">
-      <Header eyebrow={`SỐ DƯ CREDITS: ◉ ${creditsBalance}`} title="Cửa Hàng Vũ Trụ (Supply Dock)" detail="Trang bị các mẫu tàu chiến mới với kỹ năng độc quyền." />
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_.8fr] flex-1">
-        <Panel className="overflow-hidden p-6 flex flex-col justify-between">
-          {unowned.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 items-center">
-              <ShipImage spritePath={unowned[0].spritePath} name={unowned[0].name} />
+      <Header
+        eyebrow={`SỐ DƯ CREDITS: ◉ ${creditsBalance}`}
+        title="Cửa Hàng Vũ Trụ (Supply Dock)"
+        detail="Tùy chọn mở khóa bất kỳ mẫu tàu chiến nào với kỹ năng độc quyền theo ý thích."
+      />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 flex-1">
+        {SHIPS_CATALOG.map((ship) => {
+          const owned = ownedShipIds.includes(ship.id);
+          const isEquipped = equippedShipId === ship.id;
+          return (
+            <Panel key={ship.id} className="overflow-hidden p-4 flex flex-col justify-between">
               <div>
-                <Pill tone={unowned[0].colorTheme}>ADVANCED FRAME</Pill>
-                <h2 className="font-display mt-2 text-2xl font-bold">{unowned[0].name}</h2>
-                <p className="mt-2 text-xs leading-5 text-slate-400">{unowned[0].passiveDesc}</p>
-                <div className="mt-4 flex gap-6">
-                  <Stat label="HULL" value={unowned[0].hp} />
-                  <Stat label="SPEED" value={`${unowned[0].speed}×`} tone="violet" />
+                <ShipImage spritePath={ship.spritePath} name={ship.name} />
+                <div className="mt-3 flex justify-between items-center">
+                  <Pill tone={ship.colorTheme}>{ship.role}</Pill>
+                  <span className="font-mono text-xs text-cyan">TỐC ĐỘ {ship.speed}×</span>
                 </div>
-                <div className="mt-5">
-                  <Action onClick={() => buyShip(unowned[0].id)} disabled={creditsBalance < unowned[0].price}>
-                    MỞ KHÓA · {unowned[0].price} ◉
-                  </Action>
+                <h2 className="font-display mt-2 text-base font-bold">{ship.name}</h2>
+                <p className="mt-2 text-xs leading-5 text-slate-400">{ship.passiveDesc}</p>
+                <div className="mt-3 flex gap-4 border-t border-white/10 pt-2.5">
+                  <Stat label="MÁU HULL" value={ship.hp} />
+                  <Stat label="GIÁ MUA" value={ship.price === 0 ? "FREE" : `${ship.price} ◉`} tone="amber" />
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="py-12 text-center my-auto">
-              <p className="font-display text-xl text-cyan">ĐÃ SỞ HỮU TOÀN BỘ TÀU CHIẾN!</p>
-            </div>
-          )}
-        </Panel>
-
-        <Panel className="p-5 flex flex-col justify-between">
-          <div>
-            <p className="font-mono text-[9px] text-slate-400 mb-3">TRẠNG THÁI HANGAR</p>
-            <div className="space-y-2.5">
-              {SHIPS_CATALOG.map((s) => (
-                <div className="flex items-center justify-between border-b border-white/10 pb-2.5" key={s.id}>
-                  <span className="font-display text-sm font-semibold">{s.name}</span>
-                  <Pill tone={ownedShipIds.includes(s.id) ? "cyan" : "amber"}>
-                    {ownedShipIds.includes(s.id) ? "ĐÃ SỞ HỮU" : `GIÁ ${s.price} ◉`}
-                  </Pill>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
+              <div className="mt-4">
+                {owned ? (
+                  <Action onClick={() => equipShip(ship.id)} muted={isEquipped} className="w-full">
+                    {isEquipped ? "✓ ĐANG SỬ DỤNG" : "TRANG BỊ TÀU"}
+                  </Action>
+                ) : (
+                  <Action
+                    onClick={() => buyShip(ship.id)}
+                    disabled={creditsBalance < ship.price}
+                    className="w-full"
+                  >
+                    MUA NGAY · {ship.price} ◉
+                  </Action>
+                )}
+              </div>
+            </Panel>
+          );
+        })}
       </div>
     </div>
   );
@@ -485,22 +493,16 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
         </div>
       </Panel>
 
-      <div className="shrink-0 flex items-center justify-between text-xs">
-        <button onClick={() => setScreen("augment")} className="font-mono text-[10px] text-slate-400 hover:text-cyan">
-          [Thử Lõi Augment]
-        </button>
+      <div className="shrink-0 flex items-center justify-between text-xs px-1">
+        <span className="font-mono text-[9px] text-slate-500 uppercase tracking-wider">
+          AIR DEFENCE TACTICAL SYSTEM // ARENA ENGAGED
+        </span>
 
-        {/* Nút Test Clear Wave Nhanh */}
         <button
-          onClick={() => useAirDefenseStore.getState().advanceToNextWave()}
-          className="rounded-lg border border-amber-400/60 bg-amber-400/15 px-3 py-1 font-mono text-[10px] font-bold text-[#ffc857] transition hover:bg-amber-400/25 hover:border-amber-300 shadow-[0_0_14px_rgba(255,200,87,0.35)]"
-          title="Bỏ qua và chuyển sang Wave tiếp theo ngay lập tức"
+          onClick={() => setScreen("debrief")}
+          className="font-mono text-[10px] text-rose-400/80 hover:text-rose-300 transition"
         >
-          ⚡ CLEAR WAVE (TEST)
-        </button>
-
-        <button onClick={() => setScreen("debrief")} className="font-mono text-[10px] text-rose-400 hover:text-rose-300">
-          [Kết thúc trận]
+          [Rút lui / Kết thúc trận]
         </button>
       </div>
     </div>
@@ -1009,7 +1011,9 @@ function DevSandboxView() {
     openSettings,
     resetSandbox,
     playIntroSequence,
-    fireHyperBeam
+    fireHyperBeam,
+    equippedShipId,
+    equipShip
   } = useAirDefenseStore();
 
   return (
@@ -1262,6 +1266,41 @@ function DevSandboxView() {
                     </div>
                   ))
               )}
+            </div>
+          </Panel>
+
+          {/* 5. Ship Selector & Instant Switcher */}
+          <Panel className="p-3 border-cyan-300/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-cyan font-bold tracking-widest uppercase">
+                5. CHỌN TÀU CHIẾN (INSTANT SWITCH)
+              </span>
+              <span className="font-mono text-[9px] text-[#55f4ff] font-bold">
+                {SHIPS_CATALOG.find((s) => s.id === equippedShipId)?.name || equippedShipId}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              {SHIPS_CATALOG.map((s) => {
+                const isEquipped = equippedShipId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => equipShip(s.id)}
+                    className={`px-2 py-1.5 rounded-lg border font-mono text-[9px] text-left transition flex flex-col justify-between ${
+                      isEquipped
+                        ? "border-cyan-300 bg-cyan-300/20 text-cyan font-bold shadow-[0_0_12px_rgba(85,244,255,0.4)]"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center w-full">
+                      <span className="truncate font-bold">{s.name}</span>
+                      {isEquipped && <span className="text-[8px] text-cyan font-extrabold">✓ CHỌN</span>}
+                    </div>
+                    <span className="text-[8px] text-slate-400 mt-0.5">HP {s.hp} · {s.role}</span>
+                  </button>
+                );
+              })}
             </div>
           </Panel>
         </div>
