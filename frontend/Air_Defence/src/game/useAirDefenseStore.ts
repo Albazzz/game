@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { AugmentCard, AudioSettings, FloatingText, GameMode, LootItem, LootItemType, Screen, TargetWord, WeakWord } from "./types";
 import { GAME_CONFIG } from "./gameConfig";
 import { soundManager } from "./soundEffects";
-import { fetchShopDataApi, buyShipApi, equipShipApi, upgradeTalentApi, recordMatchFinishApi } from "./apiClient";
+import { fetchShopDataApi, buyShipApi, equipShipApi, upgradeTalentApi, recordMatchFinishApi, fetchLeaderboardApi, LeaderboardItem } from "./apiClient";
 
 export const SHIPS_CATALOG = GAME_CONFIG.SHIPS;
 
@@ -239,6 +239,9 @@ interface AirDefenseState {
   selectAugment: (augment: AugmentCard) => void;
   rerollAugments: () => void;
   syncWithBackend: () => Promise<void>;
+  fetchLeaderboards: () => Promise<void>;
+  endlessLeaderboard: LeaderboardItem[];
+  rankedLeaderboard: LeaderboardItem[];
   equipShip: (shipId: string) => void;
   buyShip: (shipId: string) => void;
   upgradeTalent: (talentType: "hull" | "coin" | "fastStart" | "reroll") => void;
@@ -290,6 +293,8 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     fastStart: 0,
     reroll: 0
   },
+  endlessLeaderboard: [],
+  rankedLeaderboard: [],
 
   targets: [],
   lootItems: [],
@@ -798,9 +803,28 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     });
   },
 
+  fetchLeaderboards: async () => {
+    try {
+      const [endless, ranked] = await Promise.all([
+        fetchLeaderboardApi("endless"),
+        fetchLeaderboardApi("ranked")
+      ]);
+      set({
+        endlessLeaderboard: endless,
+        rankedLeaderboard: ranked
+      });
+    } catch (err) {
+      console.warn("fetchLeaderboards error:", err);
+    }
+  },
+
   syncWithBackend: async () => {
     try {
-      const data = await fetchShopDataApi();
+      const [data, endless, ranked] = await Promise.all([
+        fetchShopDataApi(),
+        fetchLeaderboardApi("endless"),
+        fetchLeaderboardApi("ranked")
+      ]);
       if (data) {
         const owned = data.ships.filter((s) => s.owned).map((s) => s.shipId);
         set({
@@ -812,7 +836,14 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
             coin: data.coinBonusLevel || 0,
             fastStart: data.fastStartLevel || 0,
             reroll: data.rerollCountLevel || 0
-          }
+          },
+          endlessLeaderboard: endless,
+          rankedLeaderboard: ranked
+        });
+      } else {
+        set({
+          endlessLeaderboard: endless,
+          rankedLeaderboard: ranked
         });
       }
     } catch (err) {

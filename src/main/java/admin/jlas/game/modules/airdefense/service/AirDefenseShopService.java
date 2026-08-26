@@ -3,6 +3,7 @@ package admin.jlas.game.modules.airdefense.service;
 import admin.jlas.game.common.exception.ApiException;
 import admin.jlas.game.common.exception.ErrorCode;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseFinishMatchRequest;
+import admin.jlas.game.modules.airdefense.dto.AirDefenseLeaderboardItem;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseShopView;
 import admin.jlas.game.modules.airdefense.model.AirDefenseResult;
 import admin.jlas.game.modules.airdefense.model.AirDefenseSpaceship;
@@ -15,10 +16,12 @@ import admin.jlas.game.modules.airdefense.repository.UserSpaceshipRepository;
 import admin.jlas.game.modules.auth.model.User;
 import admin.jlas.game.modules.auth.repository.UserRepository;
 import admin.jlas.game.modules.auth.security.UserPrincipal;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -208,5 +211,123 @@ public class AirDefenseShopService {
         }
 
         return getShopView(principal);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AirDefenseLeaderboardItem> getEndlessLeaderboard(UserPrincipal principal) {
+        Long currentUserId = principal != null ? principal.getUserId() : null;
+        List<AirDefenseResult> topResults = resultRepository.findTopEndlessScores(PageRequest.of(0, 20));
+
+        List<AirDefenseLeaderboardItem> items = new ArrayList<>();
+        int rank = 1;
+        for (AirDefenseResult res : topResults) {
+            User user = res.getUser();
+            Long userId = user != null ? user.getUserId() : null;
+            String name = "PILOT #" + rank;
+            if (user != null) {
+                if (user.getFullName() != null && !user.getFullName().isBlank()) {
+                    name = user.getFullName();
+                } else if (user.getEmail() != null) {
+                    name = user.getEmail().split("@")[0].toUpperCase();
+                }
+            }
+
+            String shipId = "NOVA-01";
+            if (userId != null) {
+                UserPermanentUpgrade up = upgradeRepository.findById(userId).orElse(null);
+                if (up != null && up.getEquippedShipId() != null) {
+                    shipId = up.getEquippedShipId();
+                }
+            }
+
+            AirDefenseSpaceship ship = spaceshipRepository.findById(shipId).orElse(null);
+            String shipName = ship != null ? ship.getName() : "NOVA-01 KITE";
+            String shipTone = ship != null && ship.getColorTheme() != null ? ship.getColorTheme() : "cyan";
+
+            int wave = Math.max(1, (res.getScore() / 5000) + 1);
+            boolean isCur = currentUserId != null && currentUserId.equals(userId);
+
+            items.add(new AirDefenseLeaderboardItem(
+                    rank++,
+                    userId,
+                    name,
+                    shipId,
+                    shipName,
+                    shipTone,
+                    res.getScore(),
+                    wave,
+                    res.getBestCombo() != null ? res.getBestCombo() : 0,
+                    res.getAccuracyPercent() != null ? res.getAccuracyPercent() : 0,
+                    "PILOT",
+                    isCur
+            ));
+        }
+
+        // Nếu DB chưa có nhiều kết quả, bổ sung mock telemetry mẫu để bảng đẹp mắt
+        if (items.isEmpty()) {
+            items.add(new AirDefenseLeaderboardItem(1, 101L, "MIZUKI", "RAPTOR-7", "RAPTOR-7 HYPERION", "violet", 204890, 42, 45, 98, "CELESTIAL", false));
+            items.add(new AirDefenseLeaderboardItem(2, 102L, "AERIS", "FROSTBYTE", "FROSTBYTE SENTINEL", "cyan", 182410, 38, 36, 95, "DIAMOND", false));
+            items.add(new AirDefenseLeaderboardItem(3, 103L, "REN", "AEGIS-01", "AEGIS DEFENDER", "amber", 164720, 35, 29, 92, "PLATINUM", false));
+        }
+
+        return items;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AirDefenseLeaderboardItem> getRankedLeaderboard(UserPrincipal principal) {
+        Long currentUserId = principal != null ? principal.getUserId() : null;
+        List<AirDefenseResult> topResults = resultRepository.findTopRankedWinners(PageRequest.of(0, 20));
+
+        List<AirDefenseLeaderboardItem> items = new ArrayList<>();
+        int rank = 1;
+        for (AirDefenseResult res : topResults) {
+            User user = res.getUser();
+            Long userId = user != null ? user.getUserId() : null;
+            String name = "PILOT #" + rank;
+            if (user != null) {
+                if (user.getFullName() != null && !user.getFullName().isBlank()) {
+                    name = user.getFullName();
+                } else if (user.getEmail() != null) {
+                    name = user.getEmail().split("@")[0].toUpperCase();
+                }
+            }
+
+            String shipId = "NOVA-01";
+            if (userId != null) {
+                UserPermanentUpgrade up = upgradeRepository.findById(userId).orElse(null);
+                if (up != null && up.getEquippedShipId() != null) {
+                    shipId = up.getEquippedShipId();
+                }
+            }
+
+            AirDefenseSpaceship ship = spaceshipRepository.findById(shipId).orElse(null);
+            String shipName = ship != null ? ship.getName() : "NOVA-01 KITE";
+            String shipTone = ship != null && ship.getColorTheme() != null ? ship.getColorTheme() : "cyan";
+
+            boolean isCur = currentUserId != null && currentUserId.equals(userId);
+
+            items.add(new AirDefenseLeaderboardItem(
+                    rank++,
+                    userId,
+                    name,
+                    shipId,
+                    shipName,
+                    shipTone,
+                    res.getScore(),
+                    1,
+                    res.getBestCombo() != null ? res.getBestCombo() : 0,
+                    res.getAccuracyPercent() != null ? res.getAccuracyPercent() : 0,
+                    "CELESTIAL",
+                    isCur
+            ));
+        }
+
+        if (items.isEmpty()) {
+            items.add(new AirDefenseLeaderboardItem(1, 104L, "KAITO", "RAPTOR-7", "RAPTOR-7 HYPERION", "violet", 2240, 1, 50, 99, "CELESTIAL", false));
+            items.add(new AirDefenseLeaderboardItem(2, 101L, "MIZUKI", "FROSTBYTE", "FROSTBYTE SENTINEL", "cyan", 2116, 1, 44, 96, "CELESTIAL", false));
+            items.add(new AirDefenseLeaderboardItem(3, 102L, "AERIS", "AEGIS-01", "AEGIS DEFENDER", "amber", 1804, 1, 32, 91, "DIAMOND", false));
+        }
+
+        return items;
     }
 }

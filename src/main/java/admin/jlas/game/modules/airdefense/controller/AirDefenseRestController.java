@@ -3,6 +3,7 @@ package admin.jlas.game.modules.airdefense.controller;
 import admin.jlas.game.common.dto.ApiResponse;
 import admin.jlas.game.modules.airdefense.domain.AirDefenseSession;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseFinishMatchRequest;
+import admin.jlas.game.modules.airdefense.dto.AirDefenseLeaderboardItem;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseShopView;
 import admin.jlas.game.modules.airdefense.dto.AirDefenseStateView;
 import admin.jlas.game.modules.airdefense.dto.BuyShipRequest;
@@ -101,14 +102,16 @@ public class AirDefenseRestController {
     }
 
     @GetMapping("/leaderboard/endless")
-    public ResponseEntity<ApiResponse<List<AirDefenseResult>>> getEndlessLeaderboard() {
-        List<AirDefenseResult> top = resultRepository.findTopEndlessScores(PageRequest.of(0, 20));
-        return ResponseEntity.ok(ApiResponse.ok("Lấy BXH Endless thành công", top));
+    public ResponseEntity<ApiResponse<List<AirDefenseLeaderboardItem>>> getEndlessLeaderboard(
+            @AuthenticationPrincipal UserPrincipal user) {
+        List<AirDefenseLeaderboardItem> top = shopService.getEndlessLeaderboard(user);
+        return ResponseEntity.ok(ApiResponse.ok("Lấy BXH Endless từ database thành công", top));
     }
 
     @GetMapping("/leaderboard/ranked")
-    public ResponseEntity<ApiResponse<List<AirDefenseResult>>> getRankedLeaderboard() {
-        List<AirDefenseResult> top = resultRepository.findTopRankedWinners(PageRequest.of(0, 20));
-        return ResponseEntity.ok(ApiResponse.ok("Lấy BXH Ranked thành công", top));
+    public ResponseEntity<ApiResponse<List<AirDefenseLeaderboardItem>>> getRankedLeaderboard(
+            @AuthenticationPrincipal UserPrincipal user) {
+        List<AirDefenseLeaderboardItem> top = shopService.getRankedLeaderboard(user);
+        return ResponseEntity.ok(ApiResponse.ok("Lấy BXH Ranked từ database thành công", top));
     }
 }

@@ -127,3 +127,32 @@ export async function recordMatchFinishApi(payload: MatchFinishPayload): Promise
     return null;
   }
 }
+
+export interface LeaderboardItem {
+  rank: number;
+  userId: number;
+  displayName: string;
+  shipId: string;
+  shipName: string;
+  shipTone: "cyan" | "amber" | "violet" | "rose" | "emerald";
+  score: number;
+  waveReached: number;
+  bestCombo: number;
+  accuracyPercent: number;
+  rankTier: string;
+  isCurrentUser: boolean;
+}
+
+export async function fetchLeaderboardApi(mode: "endless" | "ranked" = "endless"): Promise<LeaderboardItem[]> {
+  try {
+    const res = await fetch(`/api/air-defense/leaderboard/${mode}`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch (err) {
+    console.warn(`Lỗi tải bảng xếp hạng ${mode} từ database:`, err);
+    return [];
+  }
+}

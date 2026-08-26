@@ -67,15 +67,23 @@ function ShipImage({ spritePath, name }: { spritePath: string; name: string }) {
 }
 
 function Deck() {
-  const { startMatch, setScreen, equippedShipId } = useAirDefenseStore();
+  const { startMatch, setScreen, equippedShipId, endlessLeaderboard } = useAirDefenseStore();
   const currentShip = SHIPS_CATALOG.find((s) => s.id === equippedShipId) || SHIPS_CATALOG[0];
 
-  const topRankings = [
-    { rank: "1", name: "MIZUKI", score: "204,890" },
-    { rank: "2", name: "AERIS", score: "182,410" },
-    { rank: "3", name: "REN", score: "164,720" },
-    { rank: "14", name: "YOU", score: "62,440", isUser: true }
-  ];
+  const topRankings =
+    endlessLeaderboard.length > 0
+      ? endlessLeaderboard.slice(0, 4).map((item) => ({
+          rank: String(item.rank),
+          name: item.displayName,
+          score: item.score.toLocaleString(),
+          isUser: item.isCurrentUser
+        }))
+      : [
+          { rank: "1", name: "MIZUKI", score: "204,890", isUser: false },
+          { rank: "2", name: "AERIS", score: "182,410", isUser: false },
+          { rank: "3", name: "REN", score: "164,720", isUser: false },
+          { rank: "14", name: "YOU", score: "62,440", isUser: true }
+        ];
 
   return (
     <div className="h-full flex flex-col justify-between gap-4 overflow-y-auto pr-1">
@@ -646,21 +654,37 @@ function Debrief() {
 
 function RankArchive() {
   const [tab, setTab] = useState<"endless" | "ranked">("endless");
-  const { equippedShipId } = useAirDefenseStore();
+  const { endlessLeaderboard, rankedLeaderboard, fetchLeaderboards, equippedShipId } = useAirDefenseStore();
   const playerShipName = SHIPS_CATALOG.find((s) => s.id === equippedShipId)?.name || "Vanguard Alpha";
 
+  useEffect(() => {
+    fetchLeaderboards();
+  }, [fetchLeaderboards]);
+
+  const rawList = tab === "endless" ? endlessLeaderboard : rankedLeaderboard;
+
   const people =
-    tab === "endless"
+    rawList.length > 0
+      ? rawList.map((item) => ({
+          rank: String(item.rank),
+          name: item.displayName,
+          ship: item.shipName || "NOVA-01 KITE",
+          shipTone: item.shipTone || ("cyan" as const),
+          stat: tab === "endless" ? `WAVE ${item.waveReached || 1}` : `ELO ${item.score}`,
+          value: tab === "endless" ? item.score.toLocaleString() : item.rankTier || "GOLD",
+          isUser: item.isCurrentUser
+        }))
+      : tab === "endless"
       ? [
-          { rank: "1", name: "MIZUKI", ship: "Hyperion Phantom", shipTone: "amber" as const, stat: "WAVE 42", value: "204,890" },
-          { rank: "2", name: "AERIS", ship: "Frostbyte Sentinel", shipTone: "cyan" as const, stat: "WAVE 38", value: "182,410" },
-          { rank: "3", name: "REN", ship: "Aegis Defender", shipTone: "violet" as const, stat: "WAVE 35", value: "164,720" },
+          { rank: "1", name: "MIZUKI", ship: "RAPTOR-7 HYPERION", shipTone: "violet" as const, stat: "WAVE 42", value: "204,890", isUser: false },
+          { rank: "2", name: "AERIS", ship: "FROSTBYTE SENTINEL", shipTone: "cyan" as const, stat: "WAVE 38", value: "182,410", isUser: false },
+          { rank: "3", name: "REN", ship: "AEGIS DEFENDER", shipTone: "amber" as const, stat: "WAVE 35", value: "164,720", isUser: false },
           { rank: "14", name: "YOU", ship: playerShipName, shipTone: "cyan" as const, stat: "WAVE 18", value: "62,440", isUser: true }
         ]
       : [
-          { rank: "1", name: "KAITO", ship: "Hyperion Phantom", shipTone: "amber" as const, stat: "ELO 2,240", value: "CELESTIAL" },
-          { rank: "2", name: "MIZUKI", ship: "Frostbyte Sentinel", shipTone: "cyan" as const, stat: "ELO 2,116", value: "CELESTIAL" },
-          { rank: "3", name: "AERIS", ship: "Aegis Defender", shipTone: "violet" as const, stat: "ELO 1,804", value: "DIAMOND" },
+          { rank: "1", name: "KAITO", ship: "RAPTOR-7 HYPERION", shipTone: "violet" as const, stat: "ELO 2,240", value: "CELESTIAL", isUser: false },
+          { rank: "2", name: "MIZUKI", ship: "FROSTBYTE SENTINEL", shipTone: "cyan" as const, stat: "ELO 2,116", value: "CELESTIAL", isUser: false },
+          { rank: "3", name: "AERIS", ship: "AEGIS DEFENDER", shipTone: "amber" as const, stat: "ELO 1,804", value: "DIAMOND", isUser: false },
           { rank: "27", name: "YOU", ship: playerShipName, shipTone: "cyan" as const, stat: "ELO 1,284", value: "GOLD", isUser: true }
         ];
 
@@ -669,7 +693,7 @@ function RankArchive() {
       <Header
         eyebrow="GLOBAL ARCHIVE / TELEMETRY"
         title="Bảng Xếp Hạng Phi Công"
-        detail="Vinh danh những phi công phản xạ xuất sắc nhất trên toàn vũ trụ cùng mẫu tàu chiến trang bị."
+        detail="Vinh danh những phi công phản xạ xuất sắc nhất trên toàn vũ trụ cùng mẫu tàu chiến trang bị từ Database."
       />
       <div className="mb-3 flex gap-2">
         {(["endless", "ranked"] as const).map((x) => (
