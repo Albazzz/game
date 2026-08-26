@@ -67,31 +67,81 @@ function ShipImage({ spritePath, name }: { spritePath: string; name: string }) {
 }
 
 function Deck() {
-  const { startMatch, setScreen, creditsBalance, equippedShipId } = useAirDefenseStore();
+  const { startMatch, setScreen, equippedShipId } = useAirDefenseStore();
   const currentShip = SHIPS_CATALOG.find((s) => s.id === equippedShipId) || SHIPS_CATALOG[0];
+
+  const topRankings = [
+    { rank: "1", name: "MIZUKI", score: "204,890" },
+    { rank: "2", name: "AERIS", score: "182,410" },
+    { rank: "3", name: "REN", score: "164,720" },
+    { rank: "14", name: "YOU", score: "62,440", isUser: true }
+  ];
 
   return (
     <div className="h-full flex flex-col justify-between gap-4 overflow-y-auto pr-1">
-      <Panel className="relative overflow-hidden p-6 sm:p-8">
-        <div className="absolute -right-20 -top-20 size-80 rounded-full bg-cyan-300/15 blur-3xl pointer-events-none" />
-        <Pill tone="violet">SECTOR 04 · DEEP SPACE LIVE</Pill>
-        <h1 className="font-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold leading-none">
-          THE VOID REMEMBERS<br />
-          <span className="text-cyan">EVERY WORD.</span>
-        </h1>
-        <p className="mt-3 max-w-xl text-xs sm:text-sm leading-5 text-slate-300">
-          Tự động khóa mục tiêu Laser. Gõ Romaji / Hiragana tiếng Nhật để bắn nổ quái vật không gian và tích lũy Credits vĩnh viễn vào Database.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Action onClick={() => startMatch("endless")}>BẮT ĐẦU ENDLESS →</Action>
-          <Action muted onClick={() => setScreen("queue")}>ĐẤU TRƯỜNG ARENA</Action>
-        </div>
-        <div className="mt-6 grid max-w-lg grid-cols-3 border-t border-white/10 pt-4">
-          <Stat label="TÀU CHIẾN" value={currentShip.name} />
-          <Stat label="HP CƠ BẢN" value={`HP ${currentShip.hp}`} tone="violet" />
-          <Stat label="SỐ DƯ CREDITS" value={`◉ ${creditsBalance}`} tone="amber" />
-        </div>
-      </Panel>
+      {/* Top 2-Column Grid: Hero Action on Left, Compact Ranking on Right */}
+      <div className="grid gap-4 xl:grid-cols-[1.35fr_.65fr]">
+        <Panel className="relative overflow-hidden p-6 sm:p-7 flex flex-col justify-between">
+          <div className="absolute -right-20 -top-20 size-72 rounded-full bg-cyan-300/15 blur-3xl pointer-events-none" />
+          <div>
+            <Pill tone="violet">SECTOR 04 · DEEP SPACE LIVE</Pill>
+            <h1 className="font-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold leading-none">
+              THE VOID REMEMBERS<br />
+              <span className="text-cyan">EVERY WORD.</span>
+            </h1>
+            <p className="mt-3 max-w-md text-xs sm:text-sm leading-5 text-slate-300">
+              Tự động khóa mục tiêu Laser. Gõ Romaji / Hiragana tiếng Nhật để bắn nổ quái vật không gian và tích lũy Credits vĩnh viễn.
+            </p>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Action onClick={() => startMatch("endless")}>BẮT ĐẦU ENDLESS →</Action>
+            <Action muted onClick={() => setScreen("queue")}>ĐẤU TRƯỜNG ARENA</Action>
+          </div>
+        </Panel>
+
+        {/* Compact Ranking Board (Thế chỗ nhiệm vụ hàng ngày) */}
+        <Panel className="p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2.5">
+              <div>
+                <p className="font-mono text-[9px] text-slate-400 tracking-wider">LEADERBOARD TELEMETRY</p>
+                <h2 className="font-display text-base font-bold text-white">🏆 BẢNG XẾP HẠNG</h2>
+              </div>
+              <Pill tone="amber">TOP PILOTS</Pill>
+            </div>
+
+            <div className="space-y-2">
+              {topRankings.map((r) => (
+                <div
+                  key={r.name}
+                  className={`flex items-center justify-between rounded-xl px-3 py-2 border transition ${
+                    r.isUser
+                      ? "border-cyan-300/50 bg-cyan-300/15 shadow-[0_0_12px_rgba(85,244,255,0.2)]"
+                      : "border-white/5 bg-black/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`font-display text-xs font-extrabold w-5 text-center ${r.rank === "1" ? "text-[#ffc857]" : "text-slate-400"}`}>
+                      #{r.rank}
+                    </span>
+                    <span className="font-display text-xs font-bold truncate">
+                      {r.name} {r.isUser && <span className="text-[9px] text-cyan font-normal">(BẠN)</span>}
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-cyan">{r.score}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setScreen("rank")}
+            className="mt-3 text-left font-mono text-xs text-cyan hover:underline decoration-cyan-300/40 underline-offset-4"
+          >
+            XEM CHI TIẾT RANKING →
+          </button>
+        </Panel>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[.85fr_1.15fr]">
         <Panel className="p-5 flex flex-col justify-between">
