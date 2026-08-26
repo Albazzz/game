@@ -212,6 +212,7 @@ interface AirDefenseState {
   screenShake: boolean;
   inboundBoss: boolean;
   lastLaserTarget: { x: number; y: number } | null;
+  hyperBeamActive: boolean;
   waveTransition: WaveTransitionInfo;
   isTransitioning: boolean;
   introState: MatchIntroState;
@@ -298,6 +299,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   screenShake: false,
   inboundBoss: false,
   lastLaserTarget: null,
+  hyperBeamActive: false,
   waveTransition: {
     active: false,
     phase: "none",
@@ -689,7 +691,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
 
       if (t.type === "MINI_BOSS") {
         const currentHp = t.currentHp || 1;
-        const damage = 3; // Hyper Beam gây đúng 3 sát thương cho Boss
+        const damage = GAME_CONFIG.PLAYER.hyperBeamBossDamage; // 3 HP sát thương từ config
         if (currentHp <= damage) {
           // Boss bị tiêu diệt
           updatedTargets.push({ ...t, currentHp: 0, isDead: true });
@@ -712,16 +714,17 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       hyperBeamCharge: 0,
       targets: updatedTargets,
       score: score + 500 * wave,
-      screenShake: true
+      screenShake: true,
+      hyperBeamActive: true
     });
 
     setTimeout(() => {
-      set({ screenShake: false });
+      set({ hyperBeamActive: false, screenShake: false });
       const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
       if (aliveLeft === 0) {
         advanceToNextWave();
       }
-    }, 450);
+    }, GAME_CONFIG.PLAYER.hyperBeamDurationMs);
   },
 
   selectAugment: (augment) => {

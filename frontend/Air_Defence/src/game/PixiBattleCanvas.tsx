@@ -27,6 +27,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
   const floatingTexts = useAirDefenseStore((s) => s.floatingTexts);
   const tickGameLoop = useAirDefenseStore((s) => s.tickGameLoop);
   const skipIntro = useAirDefenseStore((s) => s.skipIntro);
+  const hyperBeamActive = useAirDefenseStore((s) => s.hyperBeamActive);
 
   useEffect(() => {
     let isMounted = true;
@@ -207,7 +208,9 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
 
       const activeExplosions: ExplosionAnim[] = [];
       const laserG = new Graphics();
+      const hyperBeamG = new Graphics();
       fxLayer.addChild(laserG);
+      fxLayer.addChild(hyperBeamG);
 
       // Helper: Trigger Explosion Animation
       const spawnExplosion = (x: number, y: number) => {
@@ -581,6 +584,72 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             .lineTo(endX, endY)
             .stroke({ color: 0xa979ff, width: GAME_CONFIG.VISUALS.laserGlowWidth, alpha: 0.35 });
         }
+
+        // Hyper Beam Ultimate Super-Laser Render
+        const isHyperBeam = useAirDefenseStore.getState().hyperBeamActive;
+        hyperBeamG.clear();
+        if (isHyperBeam) {
+          const px = playerShipContainer.x;
+          const py = playerShipContainer.y - 22;
+          const topY = -150;
+          const pulse = 0.85 + Math.sin(Date.now() * 0.04) * 0.15;
+
+          // 1. Giant Outer Purple/Violet Plasma Corona
+          hyperBeamG
+            .moveTo(px, py)
+            .lineTo(px, topY)
+            .stroke({
+              color: 0x9d4edd,
+              width: GAME_CONFIG.VISUALS.hyperBeamAuraWidth * pulse,
+              alpha: 0.45
+            });
+
+          // 2. Cyan High-Energy Charged Core
+          hyperBeamG
+            .moveTo(px, py)
+            .lineTo(px, topY)
+            .stroke({
+              color: 0x00f0ff,
+              width: GAME_CONFIG.VISUALS.hyperBeamMidWidth * pulse,
+              alpha: 0.85
+            });
+
+          // 3. Ultra-Dense Pure White Nuclear Laser Beam
+          hyperBeamG
+            .moveTo(px, py)
+            .lineTo(px, topY)
+            .stroke({
+              color: 0xffffff,
+              width: GAME_CONFIG.VISUALS.hyperBeamCoreWidth,
+              alpha: 1.0
+            });
+
+          // 4. Energy Charge Wave Rings at Cannon Nozzle
+          for (let r = 1; r <= GAME_CONFIG.VISUALS.hyperBeamRingsCount; r++) {
+            const ringRadius = (16 * r + ((Date.now() * 0.08) % 24)) * pulse;
+            hyperBeamG
+              .circle(px, py, ringRadius)
+              .stroke({ color: 0x00f0ff, width: 3 - r * 0.5, alpha: 0.9 - r * 0.18 });
+          }
+
+          // 5. Blinding Muzzle Flash Core Flare
+          hyperBeamG
+            .circle(px, py, 32 * pulse)
+            .fill({ color: 0xffffff, alpha: 0.95 });
+          hyperBeamG
+            .circle(px, py, 56 * pulse)
+            .fill({ color: 0x7b2cbf, alpha: 0.6 });
+
+          // 6. Searing Electric Arcs & Lightning Discharges across the screen
+          for (let s = 0; s < 8; s++) {
+            const arcY = topY + ((Date.now() * 1.5 + s * 140) % (py - topY));
+            const arcSpread = (Math.random() - 0.5) * (GAME_CONFIG.VISUALS.hyperBeamMidWidth * 1.6);
+            hyperBeamG
+              .moveTo(px, arcY)
+              .lineTo(px + arcSpread, arcY + (Math.random() - 0.5) * 20)
+              .stroke({ color: 0xffffff, width: 2, alpha: 0.8 });
+          }
+        }
       });
 
       // Handle Resize smoothly
@@ -621,6 +690,21 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         screenShake ? "translate-x-1.5 translate-y-1.5 scale-[1.015]" : ""
       }`}
     >
+      {/* ⚡ EPIC HYPER BEAM SUPER-LASER BURST FLASH & BANNER */}
+      {hyperBeamActive && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center bg-radial from-violet-500/35 via-cyan-400/20 to-transparent mix-blend-screen animate-pulse">
+          <div className="absolute inset-0 bg-white/25 animate-in fade-in duration-75" />
+          <div className="text-center px-4 py-2 bg-black/60 rounded-2xl border border-cyan-300/60 shadow-[0_0_50px_rgba(85,244,255,0.9)] backdrop-blur-sm animate-bounce">
+            <p className="font-mono text-[10px] sm:text-xs font-bold text-violet-300 tracking-[.4em] uppercase">
+              MAXIMUM POWER DISCHARGE // ORBITAL MATRIX
+            </p>
+            <h2 className="font-display text-2xl sm:text-4xl font-extrabold text-cyan tracking-widest drop-shadow-[0_0_30px_#55f4ff]">
+              ⚡ HYPER BEAM ENGAGED ⚡
+            </h2>
+          </div>
+        </div>
+      )}
+
       {/* Danger Zone Flashing Vignette */}
       {dangerZoneActive && (
         <div className="pointer-events-none absolute inset-0 border-4 border-rose-500/80 shadow-[inset_0_0_60px_rgba(255,77,109,.6)] animate-pulse z-10" />
