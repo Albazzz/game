@@ -7,6 +7,7 @@ import { soundManager } from "./game/soundEffects";
 
 const nav: { id: Screen; icon: string; label: string }[] = [
   { id: "deck", icon: "◈", label: "Command Deck" },
+  { id: "guide", icon: "📖", label: "Hướng Dẫn" },
   { id: "hangar", icon: "△", label: "Hangar & Tàu" },
   { id: "talent", icon: "✦", label: "Talent Lab" },
   { id: "queue", icon: "⌁", label: "Match Queue" },
@@ -104,6 +105,9 @@ function Deck() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Action onClick={() => startMatch("endless")}>BẮT ĐẦU ENDLESS →</Action>
             <Action muted onClick={() => setScreen("queue")}>ĐẤU TRƯỜNG ARENA</Action>
+            <Action muted onClick={() => setScreen("guide")} className="border-cyan-300/40 text-cyan bg-cyan-300/10 hover:bg-cyan-300/20">
+              📖 HƯỚNG DẪN TÂN BINH
+            </Action>
           </div>
         </Panel>
 
@@ -753,6 +757,289 @@ function Header({ eyebrow, title, detail }: { eyebrow: string; title: string; de
   );
 }
 
+function GuideManualView() {
+  const { setScreen, startMatch } = useAirDefenseStore();
+  const [activeTab, setActiveTab] = useState<"combat" | "beam" | "ships" | "upgrades" | "tips">("combat");
+
+  const tabs: { id: "combat" | "beam" | "ships" | "upgrades" | "tips"; label: string; icon: string }[] = [
+    { id: "combat", label: "Cơ Chế Chiến Đấu", icon: "🎯" },
+    { id: "beam", label: "Hyper Beam (Shift)", icon: "⚡" },
+    { id: "ships", label: "Hangar & Tàu Chiến", icon: "🛸" },
+    { id: "upgrades", label: "Nâng Cấp & Augment", icon: "🧬" },
+    { id: "tips", label: "Vật Phẩm & Mẹo Cao Thủ", icon: "💡" }
+  ];
+
+  return (
+    <div className="h-full flex flex-col justify-between overflow-y-auto pr-1 max-w-4xl mx-auto w-full space-y-4">
+      <Header
+        eyebrow="TACTICAL FLIGHT MANUAL // SYSTEM TUTORIAL"
+        title="Cẩm Nang Tác Chiến Tân Binh"
+        detail="Toàn bộ quy trình điều khiển hỏa lực, kích hoạt Hyper Beam, mua sắm tàu chiến và bí kíp phản xạ từ vựng đỉnh cao."
+      />
+
+      {/* Tab Navigation */}
+      <div className="flex flex-wrap gap-2 shrink-0">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`min-h-10 rounded-xl border px-3.5 sm:px-4 font-display text-xs transition flex items-center gap-2 ${
+              activeTab === t.id
+                ? "border-cyan-300/60 bg-cyan-300/15 text-cyan font-bold shadow-[0_0_15px_rgba(85,244,255,0.25)]"
+                : "border-white/10 text-slate-400 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            <span>{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Contents */}
+      <Panel className="p-5 sm:p-6 flex-1 flex flex-col justify-between overflow-y-auto">
+        {activeTab === "combat" && (
+          <div className="space-y-4">
+            <div className="border-b border-white/10 pb-3">
+              <Pill tone="cyan">BƯỚC 1: KHÓA MỤC TIÊU & BẮN NỔ</Pill>
+              <h2 className="font-display text-xl font-bold mt-2 text-white">Quy Trình Tác Chiến Cơ Bản</h2>
+              <p className="text-xs text-slate-300 mt-1">
+                Tàu chiến của bạn được trang bị hệ thống Radar tối tân, tự động khóa tia Laser màu xanh vào quái vật nguy hiểm nhất gần phòng tuyến.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-6 place-items-center rounded-lg bg-cyan-300/20 text-cyan text-xs font-bold">1</span>
+                  <h3 className="font-display text-sm font-bold">Tự Động Khóa Tia Laser</h3>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Tia Laser hướng thẳng vào quái vật đang tiến gần nhất. Bạn không cần rê chuột hay nhấp click diệt quái.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-6 place-items-center rounded-lg bg-cyan-300/20 text-cyan text-xs font-bold">2</span>
+                  <h3 className="font-display text-sm font-bold">Gõ Romaji / Hiragana</h3>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Đọc chữ Hán (Kanji) hoặc chữ Hiragana trên thân quái vật và gõ trực tiếp phiên âm qua bàn phím máy tính.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-6 place-items-center rounded-lg bg-[#ffc857]/20 text-[#ffc857] text-xs font-bold">3</span>
+                  <h3 className="font-display text-sm font-bold">Chuỗi Combo Liên Hoàn</h3>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Mỗi từ gõ đúng tăng chuỗi Combo và nhân hệ số điểm thưởng (+10%, +20%...). Gõ sai sẽ làm đứt chuỗi Combo!
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-6 place-items-center rounded-lg bg-[#ff8ba0]/20 text-[#ff8ba0] text-xs font-bold">4</span>
+                  <h3 className="font-display text-sm font-bold">Bảo Vệ Phòng Tuyến (HP)</h3>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Đừng để quái vật bay chạm vào vạch phòng tuyến bên dưới. Mỗi va chạm sẽ trừ máu tàu chiến. Khi HP về 0, trận đấu kết thúc!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "beam" && (
+          <div className="space-y-4">
+            <div className="border-b border-white/10 pb-3">
+              <Pill tone="amber">VŨ KHÍ TỐI THƯỢNG // HYPER BEAM</Pill>
+              <h2 className="font-display text-xl font-bold mt-2 text-white">Chùm Hỏa Lực Plasma Quét Sạch Màn Hình</h2>
+              <p className="text-xs text-slate-300 mt-1">
+                Kỹ năng Ulti mạnh nhất của tàu chiến, giải nguy tức thì khi quái vật tràn ngập không gian.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <p className="font-mono text-[9px] text-[#ffc857]">CÁCH NẠP NĂNG LƯỢNG</p>
+                <p className="text-xs text-slate-300">
+                  • Diệt 1 quái thường: <span className="text-cyan font-bold">+5%</span><br />
+                  • Diệt Mini Boss: <span className="text-[#ffc857] font-bold">+50%</span><br />
+                  • Nhặt viên Hyper Orb: <span className="text-[#c3a6ff] font-bold">+25%</span>
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 p-3.5 space-y-2">
+                <p className="font-mono text-[9px] text-cyan">PHÍM KÍCH HOẠT</p>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 rounded bg-black/40 border border-cyan-300 font-mono text-sm font-bold text-cyan">SHIFT</span>
+                  <span className="text-xs text-slate-300">hoặc nút bấm ⚡ BEAM</span>
+                </div>
+                <p className="text-[11px] text-slate-300">Nhấn khi thanh năng lượng đạt đủ 100%.</p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <p className="font-mono text-[9px] text-[#ff8ba0]">HIỆU LỰC HỦY DIỆT</p>
+                <p className="text-xs text-slate-300">
+                  • Nén đạn 0.9s $\rightarrow$ Bắn duy trì 3s.<br />
+                  • Bắn nổ toàn bộ quái thường.<br />
+                  • Trừ trực tiếp <span className="text-[#ff8ba0] font-bold">3 Sát Thương</span> vào Boss.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-amber-300/30 bg-amber-300/10 p-3 flex items-start gap-2.5 text-xs text-amber-200">
+              <span>⚠️</span>
+              <p>Lưu ý: Trong 3 giây đang bắn Hyper Beam, quái vật bị quét nổ sẽ không rơi ra Hyper Orb để tránh lạm dụng kích hoạt liên tục vô hạn.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "ships" && (
+          <div className="space-y-4">
+            <div className="border-b border-white/10 pb-3">
+              <Pill tone="violet">HANGAR CHIẾN HẠM</Pill>
+              <h2 className="font-display text-xl font-bold mt-2 text-white">4 Dòng Tàu Chiến Độc Quyền</h2>
+              <p className="text-xs text-slate-300 mt-1">
+                Bạn có thể mở khóa và tự do chuyển đổi giữa các phi thuyền trong tab Hangar mà không cần phải mua theo thứ tự.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-cyan-300/20 bg-[#081226] p-3.5">
+                <div className="flex justify-between items-center mb-1.5">
+                  <h3 className="font-display text-sm font-bold text-cyan">🛸 NOVA-01 KITE</h3>
+                  <Pill tone="cyan">MIỄN PHÍ</Pill>
+                </div>
+                <p className="font-mono text-[9px] text-slate-400">HP: 100 · TỐC ĐỘ: 1.0x · CÂN BẰNG</p>
+                <p className="text-xs text-slate-300 mt-2">Dòng tàu chiến tiêu chuẩn dành cho tân thủ, phản hồi ổn định và dễ làm quen.</p>
+              </div>
+
+              <div className="rounded-xl border border-cyan-300/20 bg-[#081226] p-3.5">
+                <div className="flex justify-between items-center mb-1.5">
+                  <h3 className="font-display text-sm font-bold text-[#55f4ff]">❄️ FROSTBYTE SENTINEL</h3>
+                  <Pill tone="cyan">800 CREDITS</Pill>
+                </div>
+                <p className="font-mono text-[9px] text-slate-400">HP: 120 · TỐC ĐỘ: 0.8x · KHỐNG CHẾ</p>
+                <p className="text-xs text-slate-300 mt-2">Nội tại: Mỗi khi gõ đúng 5 từ liên tiếp, tự động <span className="text-cyan font-bold">đóng băng toàn bộ quái vật</span> trong 2 giây.</p>
+              </div>
+
+              <div className="rounded-xl border border-violet-300/20 bg-[#120a26] p-3.5">
+                <div className="flex justify-between items-center mb-1.5">
+                  <h3 className="font-display text-sm font-bold text-[#c3a6ff]">⚡ RAPTOR-7 HYPERION</h3>
+                  <Pill tone="violet">1200 CREDITS</Pill>
+                </div>
+                <p className="font-mono text-[9px] text-slate-400">HP: 80 · TỐC ĐỘ: 1.4x · TỐC ĐỘ CAO</p>
+                <p className="text-xs text-slate-300 mt-2">Nội tại: Nhận thêm <span className="text-[#c3a6ff] font-bold">+100% điểm Combo</span> mỗi khi tốc độ gõ đạt trên 1.5 từ/giây.</p>
+              </div>
+
+              <div className="rounded-xl border border-amber-300/20 bg-[#261a08] p-3.5">
+                <div className="flex justify-between items-center mb-1.5">
+                  <h3 className="font-display text-sm font-bold text-[#ffc857]">🛡️ AEGIS DEFENDER</h3>
+                  <Pill tone="amber">1500 CREDITS</Pill>
+                </div>
+                <p className="font-mono text-[9px] text-slate-400">HP: 180 · TỐC ĐỘ: 0.7x · PHÒNG THỦ</p>
+                <p className="text-xs text-slate-300 mt-2">Nội tại: Giảm <span className="text-[#ffc857] font-bold">30% sát thương va chạm</span> khi quái vật tiếp cận phá vỡ phòng tuyến.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "upgrades" && (
+          <div className="space-y-4">
+            <div className="border-b border-white/10 pb-3">
+              <Pill tone="rose">TIẾN TRÌNH & NÂNG CẤP</Pill>
+              <h2 className="font-display text-xl font-bold mt-2 text-white">Augment Chips & Viện Nâng Cấp (Talent Lab)</h2>
+              <p className="text-xs text-slate-300 mt-1">
+                Tăng cường sức mạnh liên tục trong ván đấu và tích lũy nâng cấp vĩnh viễn vào Database.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <h3 className="font-display text-sm font-bold text-cyan">🎲 Augment Draft (Trong Ván)</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Sau khi vượt qua mỗi Wave, màn hình chọn 1 trong 3 chip bổ trợ sẽ xuất hiện:
+                </p>
+                <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                  <li><span className="text-cyan font-semibold">Pháo Đôi Plasma:</span> +50% điểm số hạ gục.</li>
+                  <li><span className="text-cyan font-semibold">Tia Phản Xạ:</span> Đạn bắn lan sang mục tiêu lân cận.</li>
+                  <li><span className="text-cyan font-semibold">Lưới Hút Ngọc:</span> Hút ngọc rơi từ khoảng cách xa hơn.</li>
+                </ul>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3.5 space-y-2">
+                <h3 className="font-display text-sm font-bold text-[#ffc857]">🏛️ Viện Nâng Cấp (Lưu Database Vĩnh Viễn)</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Dùng Credits tích lũy sau các ván đấu để nâng cấp các chỉ số gốc:
+                </p>
+                <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                  <li><span className="text-[#ffc857] font-semibold">Gia Cố Thân Tàu:</span> +25 HP vĩnh viễn mỗi cấp.</li>
+                  <li><span className="text-[#ffc857] font-semibold">Khai Thác Khoáng Sản:</span> +15% Credits nhặt được.</li>
+                  <li><span className="text-[#ffc857] font-semibold">Khởi Động Nhanh:</span> Bắt đầu ván đấu với điểm số thưởng.</li>
+                  <li><span className="text-[#ffc857] font-semibold">Bộ Điều Hướng:</span> Thêm lượt Đổi bài (Reroll) Augment.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "tips" && (
+          <div className="space-y-4">
+            <div className="border-b border-white/10 pb-3">
+              <Pill tone="cyan">BÍ KÍP PHẢN XẠ & CHIẾN LƯỢC</Pill>
+              <h2 className="font-display text-xl font-bold mt-2 text-white">Vật Phẩm Rơi & Mẹo Đạt Top 1 Bảng Xếp Hạng</h2>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-display text-xs font-bold text-cyan">
+                  <span>💎</span> Credit Crystals
+                </div>
+                <p className="text-xs text-slate-300">Rơi ra khi diệt quái, tự động bay hút vào tàu chiến để cộng tiền số dư.</p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-display text-xs font-bold text-[#ff8ba0]">
+                  <span>❤️</span> Repair Pack
+                </div>
+                <p className="text-xs text-slate-300">Hộp cứu thương khẩn cấp, nhặt để hồi phục ngay lập tức +30 HP tàu chiến.</p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-display text-xs font-bold text-[#c3a6ff]">
+                  <span>🔮</span> Hyper Orb
+                </div>
+                <p className="text-xs text-slate-300">Khối cầu năng lượng tím, nhặt để nạp tức thì +25% thanh Hyper Beam.</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-black/30 p-4 space-y-2">
+              <h3 className="font-display text-sm font-bold text-[#ffc857]">🌟 3 Lời Khuyên Từ Các Phi Công Kỷ Lục</h3>
+              <ol className="text-xs text-slate-300 space-y-2 list-decimal list-inside">
+                <li><strong className="text-white">Ưu tiên quái vật ở tầm thấp:</strong> Quái vật bay sát phòng tuyến nguy hiểm nhất, hãy nhìn tia Laser xanh để biết quái nào đang được nhắm trước.</li>
+                <li><strong className="text-white">Dành Hyper Beam cho Boss:</strong> Khi Mini Boss xuất hiện với nhiều thanh máu, hãy bắn ngay Hyper Beam để trừ sạch 3 HP và quét sạch bầy quái đệ.</li>
+                <li><strong className="text-white">Giữ nhịp gõ chính xác:</strong> Điểm số tăng theo cấp số nhân với chuỗi Combo, gõ bình tĩnh và chuẩn xác quan trọng hơn gõ ẩu bị đứt nhịp.</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {/* Action Footer */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4 shrink-0">
+          <div className="flex flex-wrap gap-2">
+            <Action onClick={() => startMatch("endless")}>BẮT ĐẦU ENDLESS NGAY →</Action>
+            <Action muted onClick={() => setScreen("sandbox")}>VÀO PHÒNG TẬP BẮN SANDBOX</Action>
+          </div>
+          <Action muted onClick={() => setScreen("deck")}>QUAY VỀ SẢNH CHÍNH</Action>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
 function AudioSettingsView({ isModal = false, onClose }: { isModal?: boolean; onClose?: () => void }) {
   const { audioSettings, updateAudioSettings } = useAirDefenseStore();
 
@@ -1340,6 +1627,7 @@ export default function App() {
 
   const content: Record<Screen, ReactNode> = {
     deck: <Deck />,
+    guide: <GuideManualView />,
     hangar: <Hangar />,
     talent: <TalentLab />,
     shop: <Hangar />,
