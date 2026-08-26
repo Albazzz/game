@@ -6,14 +6,14 @@ import { GAME_CONFIG } from "./game/gameConfig";
 import { soundManager } from "./game/soundEffects";
 
 const nav: { id: Screen; icon: string; label: string }[] = [
-  { id: "deck", icon: "◈", label: "Command Deck" },
+  { id: "deck", icon: "◈", label: "Sảnh Chỉ Huy" },
   { id: "guide", icon: "📖", label: "Hướng Dẫn" },
-  { id: "hangar", icon: "△", label: "Hangar & Tàu" },
-  { id: "talent", icon: "✦", label: "Talent Lab" },
-  { id: "queue", icon: "⌁", label: "Match Queue" },
-  { id: "rank", icon: "▤", label: "Rank Archive" },
-  { id: "settings", icon: "⚙", label: "Audio & System" },
-  { id: "sandbox", icon: "🛠", label: "Dev Sandbox" }
+  { id: "hangar", icon: "△", label: "Nhà Xưởng & Tàu" },
+  { id: "talent", icon: "✦", label: "Viện Nâng Cấp" },
+  { id: "queue", icon: "⌁", label: "Tìm Trận Đấu" },
+  { id: "rank", icon: "▤", label: "Bảng Xếp Hạng" },
+  { id: "settings", icon: "⚙", label: "Âm Thanh" },
+  { id: "sandbox", icon: "🛠", label: "Phòng Thử Nghiệm" }
 ];
 
 function Stat({ label, value, tone = "cyan" }: { label: string; value: string | number; tone?: "cyan" | "amber" | "violet" | "rose" }) {
@@ -93,17 +93,17 @@ function Deck() {
         <Panel className="relative overflow-hidden p-6 sm:p-7 flex flex-col justify-between">
           <div className="absolute -right-20 -top-20 size-72 rounded-full bg-cyan-300/15 blur-3xl pointer-events-none" />
           <div>
-            <Pill tone="violet">SECTOR 04 · DEEP SPACE LIVE</Pill>
+            <Pill tone="violet">KHU VỰC 04 · VŨ TRỤ TRỰC TUYẾN</Pill>
             <h1 className="font-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold leading-none">
-              THE VOID REMEMBERS<br />
-              <span className="text-cyan">EVERY WORD.</span>
+              VŨ TRỤ KHẮC GHI<br />
+              <span className="text-cyan">TỪNG TỪ VỰNG.</span>
             </h1>
             <p className="mt-3 max-w-md text-xs sm:text-sm leading-5 text-slate-300">
               Tự động khóa mục tiêu Laser. Gõ Romaji / Hiragana tiếng Nhật để bắn nổ quái vật không gian và tích lũy Credits vĩnh viễn.
             </p>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Action onClick={() => startMatch("endless")}>BẮT ĐẦU ENDLESS →</Action>
+            <Action onClick={() => startMatch("endless")}>BẮT ĐẦU VÔ TẬN →</Action>
             <Action muted onClick={() => setScreen("queue")}>ĐẤU TRƯỜNG ARENA</Action>
             <Action muted onClick={() => setScreen("guide")} className="border-cyan-300/40 text-cyan bg-cyan-300/10 hover:bg-cyan-300/20">
               📖 HƯỚNG DẪN TÂN BINH
@@ -116,10 +116,10 @@ function Deck() {
           <div>
             <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2.5">
               <div>
-                <p className="font-mono text-[9px] text-slate-400 tracking-wider">LEADERBOARD TELEMETRY</p>
+                <p className="font-mono text-[9px] text-slate-400 tracking-wider">DỮ LIỆU XẾP HẠNG</p>
                 <h2 className="font-display text-base font-bold text-white">🏆 BẢNG XẾP HẠNG</h2>
               </div>
-              <Pill tone="amber">TOP PILOTS</Pill>
+              <Pill tone="amber">TOP PHI CÔNG</Pill>
             </div>
 
             <div className="space-y-2">
@@ -150,7 +150,7 @@ function Deck() {
             onClick={() => setScreen("rank")}
             className="mt-3 text-left font-mono text-xs text-cyan hover:underline decoration-cyan-300/40 underline-offset-4"
           >
-            XEM CHI TIẾT RANKING →
+            XEM CHI TIẾT XẾP HẠNG →
           </button>
         </Panel>
       </div>
@@ -158,12 +158,12 @@ function Deck() {
       <div className="grid gap-4 lg:grid-cols-[.85fr_1.15fr]">
         <Panel className="p-5 flex flex-col justify-between">
           <div>
-            <p className="font-mono text-[9px] text-slate-400 mb-2">TÀU CHIẾN ĐANG TRANG BỊ</p>
+            <p className="font-mono text-[9px] text-slate-400 mb-2">CHIẾN HẠM ĐANG TRANG BỊ</p>
             <ShipImage spritePath={currentShip.spritePath} name={currentShip.name} />
             <div className="mt-3 flex items-center justify-between">
               <div>
                 <h3 className="font-display text-base font-bold">{currentShip.name}</h3>
-                <p className="text-xs text-slate-400">{currentShip.role} · HP {currentShip.hp} · {currentShip.speed}× SPEED</p>
+                <p className="text-xs text-slate-400">{currentShip.role} · HP {currentShip.hp} · {currentShip.speed}× TỐC ĐỘ</p>
               </div>
               <Action muted onClick={() => setScreen("hangar")}>ĐỔI TÀU</Action>
             </div>
@@ -174,7 +174,7 @@ function Deck() {
           <div>
             <div className="flex justify-between items-center">
               <div>
-                <p className="font-mono text-[9px] text-slate-400">ARCHIVE REVIEW</p>
+                <p className="font-mono text-[9px] text-slate-400">ÔN TẬP TỪ VỰNG</p>
                 <h2 className="font-display text-lg font-bold">Từ vựng cần ôn tập phản xạ</h2>
               </div>
               <Pill tone="rose">4 TỪ</Pill>
@@ -209,7 +209,7 @@ function Hangar() {
     <div className="h-full flex flex-col overflow-y-auto pr-1">
       <Header
         eyebrow={`SỐ DƯ CREDITS: ◉ ${creditsBalance}`}
-        title="Nhà Chứa Tàu (Hangar)"
+        title="Nhà Xưởng Tàu Chiến (Hangar)"
         detail="Tự do mua và trang bị bất kỳ phi thuyền nào mà không cần theo thứ tự."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 flex-1">
@@ -253,15 +253,15 @@ function Hangar() {
 function TalentLab() {
   const { talentLevels, upgradeTalent, creditsBalance } = useAirDefenseStore();
   const nodes = [
-    { type: "hull" as const, title: `+${GAME_CONFIG.TALENTS.hullBonusPerLevel} HULL`, sub: "Tăng HP cơ bản", level: talentLevels.hull },
-    { type: "coin" as const, title: "COIN VECTOR", sub: `+${GAME_CONFIG.TALENTS.coinBonusPctPerLevel}% Credits`, level: talentLevels.coin },
-    { type: "fastStart" as const, title: "FAST START", sub: "Bắt đầu với 1 Lõi", level: talentLevels.fastStart },
-    { type: "reroll" as const, title: "EXTRA REROLL", sub: `+${GAME_CONFIG.TALENTS.extraRerollPerLevel} Lượt Reroll`, level: talentLevels.reroll }
+    { type: "hull" as const, title: `+${GAME_CONFIG.TALENTS.hullBonusPerLevel} GIÁP THÂN TÀU`, sub: "Tăng HP cơ bản vĩnh viễn", level: talentLevels.hull },
+    { type: "coin" as const, title: "KHAI THÁC CREDITS", sub: `+${GAME_CONFIG.TALENTS.coinBonusPctPerLevel}% Credits rơi ra`, level: talentLevels.coin },
+    { type: "fastStart" as const, title: "KHỞI ĐỘNG NHANH", sub: "Bắt đầu với điểm số thưởng", level: talentLevels.fastStart },
+    { type: "reroll" as const, title: "BỘ ĐIỀU HƯỚNG", sub: `+${GAME_CONFIG.TALENTS.extraRerollPerLevel} Lượt Đổi Bài (Reroll)`, level: talentLevels.reroll }
   ];
 
   return (
     <div className="h-full flex flex-col overflow-y-auto pr-1">
-      <Header eyebrow={`SỐ DƯ: ◉ ${creditsBalance} CREDITS`} title="Viện Nâng Cấp Vĩnh Viễn" detail="Các nâng cấp Talent Tree tồn tại vĩnh viễn qua mọi trận đấu." />
+      <Header eyebrow={`SỐ DƯ: ◉ ${creditsBalance} CREDITS`} title="Viện Nâng Cấp Vĩnh Viễn" detail="Các nâng cấp tiềm năng tồn tại vĩnh viễn trong cơ sở dữ liệu qua mọi trận đấu." />
       <Panel className="p-6 flex-1 flex items-center justify-center">
         <div className="w-full max-w-4xl grid gap-4 md:grid-cols-4">
           {nodes.map((node) => {
@@ -269,7 +269,7 @@ function TalentLab() {
             return (
               <div key={node.title} className={`rounded-xl border p-4 flex flex-col justify-between ${active ? "border-cyan-300/60 bg-cyan-300/10" : "border-white/15 bg-black/25"}`}>
                 <div>
-                  <Pill tone={active ? "cyan" : "violet"}>LV {node.level}</Pill>
+                  <Pill tone={active ? "cyan" : "violet"}>CẤP {node.level}</Pill>
                   <h2 className="font-display mt-3 text-base font-bold">{node.title}</h2>
                   <p className="mt-1 text-xs text-slate-400">{node.sub}</p>
                 </div>
@@ -291,18 +291,17 @@ function TalentLab() {
   );
 }
 
-
 function MatchQueue() {
   const [selectedMode, setSelectedMode] = useState<"endless" | "pvp">("endless");
   const startMatch = useAirDefenseStore((s) => s.startMatch);
 
   return (
     <div className="h-full flex flex-col justify-between overflow-y-auto pr-1 max-w-4xl mx-auto w-full">
-      <Header eyebrow="ĐẤU TRƯỜNG / MATCH CONTROL" title="Chọn Chế Độ Chiến Đấu" detail="Chơi đơn vô tận hoặc đấu phản xạ 1v1 thời gian thực với đối thủ." />
+      <Header eyebrow="ĐẤU TRƯỜNG / TÌM TRẬN" title="Chọn Chế Độ Chiến Đấu" detail="Chơi đơn vô tận hoặc đấu phản xạ 1v1 thời gian thực với đối thủ." />
       <div className="grid gap-4 md:grid-cols-2 flex-1 items-center">
         {[
-          { id: "endless" as const, title: "ENDLESS ROGUELIKE", desc: "Sinh tồn qua từng làn sóng quái vật. Chọn Lõi nâng cấp sau mỗi 3 Wave.", icon: "∞" },
-          { id: "pvp" as const, title: "1V1 ARENA SURVIVAL", desc: "Đấu phản xạ song song. Gõ chuỗi Combo gửi Mini-Boss sang đối thủ.", icon: "⇄" }
+          { id: "endless" as const, title: "CHẾ ĐỘ VÔ TẬN (ENDLESS)", desc: "Sinh tồn qua từng làn sóng quái vật. Chọn chip nâng cấp sau mỗi 3 Wave.", icon: "∞" },
+          { id: "pvp" as const, title: "ĐẤU TRƯỜNG 1V1 (ARENA)", desc: "Đấu phản xạ song song. Gõ chuỗi Combo gửi Mini-Boss sang đối thủ.", icon: "⇄" }
         ].map((m) => (
           <button
             key={m.id}
@@ -384,11 +383,11 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
       {/* Top Compact HUD */}
       <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
         <div className="flex items-center gap-3">
-          <Pill tone={isPvP ? "violet" : "cyan"}>{isPvP ? "1V1 ARENA // DUEL" : `ENDLESS // WAVE ${wave.toString().padStart(2, "0")}`}</Pill>
-          <h1 className="font-display text-lg sm:text-xl font-bold">{isPvP ? "SECTOR ALPHA // VERSUS KAITO" : "SECTOR 04 — ECHO NEBULA"}</h1>
+          <Pill tone={isPvP ? "violet" : "cyan"}>{isPvP ? "ĐẤU TRƯỜNG 1V1 // ĐỐI KHÁNG" : `VÔ TẬN // LÀN SÓNG ${wave.toString().padStart(2, "0")}`}</Pill>
+          <h1 className="font-display text-lg sm:text-xl font-bold">{isPvP ? "KHU VỰC ALPHA // ĐỐI THỦ KAITO" : "KHU VỰC 04 — TINH VÂN ECHO"}</h1>
         </div>
         <div className="flex items-center gap-5">
-          <Stat label="SCORE" value={score} />
+          <Stat label="ĐIỂM SỐ" value={score} />
           <Stat label="COMBO" value={`×${combo}`} tone="violet" />
           <Stat label="CREDITS" value={`+${creditsEarned}`} tone="amber" />
         </div>
@@ -400,8 +399,8 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
           <div className="flex items-center gap-3">
             <span className="grid size-7 place-items-center rounded-full bg-violet-400/20 font-display text-xs text-violet-200">K</span>
             <div>
-              <p className="font-display text-xs font-bold">KAITO / OPPONENT</p>
-              <p className="font-mono text-[8px] text-slate-400">COMBO ×12 · WAVE {wave}</p>
+              <p className="font-display text-xs font-bold">KAITO / ĐỐI THỦ</p>
+              <p className="font-mono text-[8px] text-slate-400">COMBO ×12 · LÀN SÓNG {wave}</p>
             </div>
           </div>
           {inboundBoss && <Pill tone="rose">⚠ CẢNH BÁO MINI-BOSS ĐANG RƠI</Pill>}
@@ -415,8 +414,8 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
         {/* HUD Overlay inside canvas */}
         <div className="pointer-events-none absolute top-3 left-4 right-4 flex justify-between items-center text-xs">
           <div className="flex items-center gap-3 bg-black/40 backdrop-blur px-3 py-1 rounded-lg border border-white/10">
-            <span className="font-mono text-[10px] text-cyan font-bold">HULL: {hp}/{maxHp}</span>
-            {shield > 0 && <span className="font-mono text-[10px] text-[#ffc857] font-bold">SHIELD: {shield}</span>}
+            <span className="font-mono text-[10px] text-cyan font-bold">MÁU: {hp}/{maxHp}</span>
+            {shield > 0 && <span className="font-mono text-[10px] text-[#ffc857] font-bold">GIÁP: {shield}</span>}
           </div>
 
           {/* Action & Settings Buttons */}
@@ -471,7 +470,7 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
                 soundManager.playKeyStroke();
               }}
               onKeyDown={onKey}
-              placeholder="Gõ cách đọc Romaji / Hiragana của quái vật…"
+              placeholder="Gõ cách đọc Romaji / Hiragana của từ vựng…"
               autoFocus
               className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500 font-medium"
             />
@@ -482,7 +481,7 @@ function Battle({ isPvP = false }: { isPvP?: boolean }) {
 
       <div className="shrink-0 flex items-center justify-between text-xs px-1">
         <span className="font-mono text-[9px] text-slate-500 uppercase tracking-wider">
-          AIR DEFENCE TACTICAL SYSTEM // ARENA ENGAGED
+          HỆ THỐNG TÁC CHIẾN AIR DEFENCE // ĐANG THỰC CHIẾN
         </span>
 
         <button
@@ -517,7 +516,7 @@ function AugmentDraft() {
       {selectedCard && (
         <div className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center bg-cyan-950/40 backdrop-blur-md animate-pulse">
           <div className="text-center animate-bounce">
-            <p className="font-mono text-xs text-cyan tracking-[.35em] uppercase font-bold">SYSTEM UPGRADE COMPLETE</p>
+            <p className="font-mono text-xs text-cyan tracking-[.35em] uppercase font-bold">NÂNG CẤP HỆ THỐNG HOÀN TẤT</p>
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white drop-shadow-[0_0_35px_rgba(85,244,255,0.9)]">
               ✦ ĐÃ KÍCH HOẠT: {selectedCard.title} ✦
             </h2>
@@ -527,7 +526,7 @@ function AugmentDraft() {
 
       <div className="w-full max-w-4xl">
         <div className="mb-6 text-center">
-          <Pill tone="violet">ROGUELIKE TACTICAL AUGMENT</Pill>
+          <Pill tone="violet">LÕI BỔ TRỢ CHIẾN THUẬT</Pill>
           <h1 className="font-display mt-2 text-3xl sm:text-4xl font-bold tracking-wide">
             Chọn <span className="text-[#c3a6ff]">Lõi Nâng Cấp Không Gian</span>
           </h1>
@@ -573,7 +572,7 @@ function AugmentDraft() {
                 <div>
                   <div className="flex items-center justify-between">
                     <Pill tone={card.tone}>{card.category}</Pill>
-                    <span className="font-mono text-[9px] text-slate-500 tracking-wider">TIER 1</span>
+                    <span className="font-mono text-[9px] text-slate-500 tracking-wider">CẤP 1</span>
                   </div>
                   <div className="font-display mt-4 text-4xl text-[#c3a6ff] transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_16px_rgba(195,166,255,0.8)]">
                     {card.icon}
@@ -586,7 +585,7 @@ function AugmentDraft() {
 
                 <div className="flex items-center justify-between border-t border-white/10 pt-3">
                   <span className="font-mono text-[10px] text-cyan font-bold tracking-widest uppercase group-hover:underline">
-                    {isChosen ? "ĐANG TÍCH HỢP..." : "CHỌN MODULE →"}
+                    {isChosen ? "ĐANG TÍCH HỢP..." : "CHỌN LÕI NÀY →"}
                   </span>
                   <span className="font-mono text-[10px] text-slate-500">SYS_0{card.id.length}</span>
                 </div>
@@ -611,22 +610,22 @@ function Debrief() {
   return (
     <div className="h-full flex flex-col justify-between overflow-y-auto pr-1 max-w-4xl mx-auto w-full">
       <div className="text-center">
-        <Pill tone="cyan">FLIGHT DEBRIEF / TỔNG KẾT</Pill>
+        <Pill tone="cyan">BÁO CÁO TỔNG KẾT TÁC CHIẾN</Pill>
         <h1 className="font-display mt-2 text-3xl sm:text-4xl font-bold text-cyan">HOÀN THÀNH TRẬN ĐẤU</h1>
-        <p className="mt-1 text-xs text-slate-400">Đạt tới Wave {wave} · Dữ liệu phản xạ từ vựng đã được lưu trữ.</p>
+        <p className="mt-1 text-xs text-slate-400">Đạt tới Làn Sóng {wave} · Dữ liệu phản xạ từ vựng và số dư Credits đã được lưu trữ.</p>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[.8fr_1.2fr] flex-1 items-center">
         <Panel className="p-5">
           <p className="font-mono text-[9px] text-slate-400">THỐNG KÊ CHIẾN TRƯỜNG</p>
           <div className="mt-4 grid grid-cols-2 gap-y-4">
-            <Stat label="TỔNG ĐIỂM" value={score} />
+            <Stat label="TỔNG ĐIỂM SỐ" value={score} />
             <Stat label="COMBO CAO NHẤT" value={`×${bestCombo}`} tone="violet" />
-            <Stat label="WAVE ĐẠT ĐƯỢC" value={wave} />
-            <Stat label="CREDITS NHẬN ĐƯỢC" value={`+${creditsEarned} ◉`} tone="amber" />
+            <Stat label="LÀN SÓNG ĐẠT ĐƯỢC" value={wave} />
+            <Stat label="CREDITS THU THẬP" value={`+${creditsEarned} ◉`} tone="amber" />
           </div>
           <div className="mt-6">
-            <Action onClick={resetToDeck} className="w-full">QUAY VỀ COMMAND DECK</Action>
+            <Action onClick={resetToDeck} className="w-full">QUAY VỀ SẢNH CHỈ HUY</Action>
           </div>
         </Panel>
 
@@ -674,16 +673,16 @@ function RankArchive() {
           name: item.displayName,
           ship: item.shipName || "NOVA-01 KITE",
           shipTone: item.shipTone || ("cyan" as const),
-          stat: tab === "endless" ? `WAVE ${item.waveReached || 1}` : `ELO ${item.score}`,
+          stat: tab === "endless" ? `LÀN SÓNG ${item.waveReached || 1}` : `ĐIỂM ELO ${item.score}`,
           value: tab === "endless" ? item.score.toLocaleString() : item.rankTier || "GOLD",
           isUser: item.isCurrentUser
         }))
       : tab === "endless"
       ? [
-          { rank: "1", name: "MIZUKI", ship: "RAPTOR-7 HYPERION", shipTone: "violet" as const, stat: "WAVE 42", value: "204,890", isUser: false },
-          { rank: "2", name: "AERIS", ship: "FROSTBYTE SENTINEL", shipTone: "cyan" as const, stat: "WAVE 38", value: "182,410", isUser: false },
-          { rank: "3", name: "REN", ship: "AEGIS DEFENDER", shipTone: "amber" as const, stat: "WAVE 35", value: "164,720", isUser: false },
-          { rank: "14", name: "YOU", ship: playerShipName, shipTone: "cyan" as const, stat: "WAVE 18", value: "62,440", isUser: true }
+          { rank: "1", name: "MIZUKI", ship: "RAPTOR-7 HYPERION", shipTone: "violet" as const, stat: "LÀN SÓNG 42", value: "204,890", isUser: false },
+          { rank: "2", name: "AERIS", ship: "FROSTBYTE SENTINEL", shipTone: "cyan" as const, stat: "LÀN SÓNG 38", value: "182,410", isUser: false },
+          { rank: "3", name: "REN", ship: "AEGIS DEFENDER", shipTone: "amber" as const, stat: "LÀN SÓNG 35", value: "164,720", isUser: false },
+          { rank: "14", name: "YOU", ship: playerShipName, shipTone: "cyan" as const, stat: "LÀN SÓNG 18", value: "62,440", isUser: true }
         ]
       : [
           { rank: "1", name: "KAITO", ship: "RAPTOR-7 HYPERION", shipTone: "violet" as const, stat: "ELO 2,240", value: "CELESTIAL", isUser: false },
@@ -695,7 +694,7 @@ function RankArchive() {
   return (
     <div className="h-full flex flex-col justify-between overflow-y-auto pr-1 max-w-4xl mx-auto w-full">
       <Header
-        eyebrow="GLOBAL ARCHIVE / TELEMETRY"
+        eyebrow="LƯU TRỮ TOÀN CẦU // BẢNG XẾP HẠNG"
         title="Bảng Xếp Hạng Phi Công"
         detail="Vinh danh những phi công phản xạ xuất sắc nhất trên toàn vũ trụ cùng mẫu tàu chiến trang bị từ Database."
       />
@@ -708,7 +707,7 @@ function RankArchive() {
               tab === x ? "border-cyan-300/60 bg-cyan-300/10 text-cyan font-bold" : "border-white/10 text-slate-400 hover:bg-white/5"
             }`}
           >
-            {x === "endless" ? "ENDLESS TOP SCORE" : "PVP ELO RATING"}
+            {x === "endless" ? "ĐIỂM CAO VÔ TẬN (ENDLESS)" : "ĐIỂM XẾP HẠNG PVP (ELO)"}
           </button>
         ))}
       </div>
@@ -1699,8 +1698,8 @@ export default function App() {
 
         {/* Pilot Telemetry */}
         <div className="mt-auto hidden rounded-xl border border-white/10 bg-white/5 p-2.5 lg:block">
-          <p className="font-mono text-[8px] text-slate-500">PILOT TELEMETRY</p>
-          <p className="font-display mt-0.5 text-xs font-bold">PILOT_01</p>
+          <p className="font-mono text-[8px] text-slate-500">THÔNG TIN PHI CÔNG</p>
+          <p className="font-display mt-0.5 text-xs font-bold">PHI CÔNG #01</p>
           <p className="font-mono text-[9px] text-[#ffc857]">◉ {creditsBalance} CREDITS</p>
         </div>
       </aside>

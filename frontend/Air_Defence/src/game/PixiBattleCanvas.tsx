@@ -774,9 +774,9 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
           <div className="text-center px-4 max-w-lg">
             {introState.phase === "boot" && (
               <div className="animate-pulse">
-                <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">SYSTEM TELEMETRY SCAN</p>
+                <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">QUÉT DỮ LIỆU HỆ THỐNG</p>
                 <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                  AI DEFENSE MATRIX : ONLINE
+                  MA TRẬN PHÒNG THỦ : TRỰC TUYẾN
                 </h2>
                 <div className="mt-3 flex justify-center gap-2">
                   <span className="h-1.5 w-12 rounded-full bg-cyan animate-pulse" />
@@ -788,19 +788,19 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
 
             {introState.phase === "warpin" && (
               <div className="animate-bounce">
-                <p className="font-mono text-xs text-[#ffc857] tracking-[.35em] uppercase font-bold">WARP INGRESS</p>
+                <p className="font-mono text-xs text-[#ffc857] tracking-[.35em] uppercase font-bold">BƯỚC NHẢY VŨ TRỤ</p>
                 <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white drop-shadow-[0_0_30px_rgba(85,244,255,0.8)]">
-                  FLAGSHIP DEPLOYED
+                  CHIẾN HẠM ĐÃ XUẤT KÍCH
                 </h2>
-                <p className="font-mono text-[10px] text-slate-300 mt-1">VĂN TỐC TÁC CHIẾN ĐÃ SẴN SÀNG</p>
+                <p className="font-mono text-[10px] text-slate-300 mt-1">VẬN TỐC TÁC CHIẾN ĐÃ SẴN SÀNG</p>
               </div>
             )}
 
             {introState.phase === "ready" && (
               <div className="animate-pulse">
-                <p className="font-mono text-xs text-rose-400 tracking-[.4em] uppercase font-bold">SECTOR 01 ENGAGED</p>
+                <p className="font-mono text-xs text-rose-400 tracking-[.4em] uppercase font-bold">KHỞI ĐỘNG VÙNG CHIẾN 01</p>
                 <h2 className="font-display text-5xl sm:text-6xl font-extrabold text-cyan drop-shadow-[0_0_40px_rgba(85,244,255,1)]">
-                  ENGAGE!
+                  XUẤT TRẬN!
                 </h2>
               </div>
             )}
@@ -813,18 +813,18 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300">
           {waveTransition.phase === "cleared" && (
             <div className="text-center animate-pulse">
-              <p className="font-mono text-xs text-[#ffc857] tracking-[.3em] uppercase">SECTOR DEFENDED · +1,000 PTS</p>
+              <p className="font-mono text-xs text-[#ffc857] tracking-[.3em] uppercase">BẢO VỆ THÀNH CÔNG · +1.000 ĐIỂM</p>
               <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-cyan tracking-wider drop-shadow-[0_0_30px_rgba(85,244,255,0.8)]">
-                WAVE {waveTransition.clearedWave.toString().padStart(2, "0")} CLEARED
+                VƯỢT QUA LÀN SÓNG {waveTransition.clearedWave.toString().padStart(2, "0")}
               </h2>
             </div>
           )}
 
           {waveTransition.phase === "warp" && (
             <div className="text-center animate-bounce">
-              <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">HYPERDRIVE ACCELERATION</p>
+              <p className="font-mono text-xs text-cyan tracking-[.4em] uppercase">GIA TỐC SIÊU KHÔNG GIAN</p>
               <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white tracking-widest drop-shadow-[0_0_40px_rgba(255,255,255,0.9)]">
-                »» WARPING TO SECTOR {waveTransition.incomingWave.toString().padStart(2, "0")} ««
+                »» TIẾN VÀO KHU VỰC {waveTransition.incomingWave.toString().padStart(2, "0")} ««
               </h2>
             </div>
           )}
@@ -833,17 +833,17 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             <div className="text-center">
               {waveTransition.isBoss ? (
                 <div className="animate-pulse">
-                  <p className="font-mono text-xs text-rose-400 tracking-[.35em] uppercase font-bold">⚠ EXTREME THREAT LEVEL ⚠</p>
+                  <p className="font-mono text-xs text-rose-400 tracking-[.35em] uppercase font-bold">⚠ MỨC ĐỘ NGUY HIỂM TỐI CAO ⚠</p>
                   <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-rose-500 tracking-wider drop-shadow-[0_0_40px_rgba(255,51,102,0.9)]">
-                    DREADNOUGHT BOSS INBOUND
+                    CHIẾN HẠM BOSS XUẤT HIỆN
                   </h2>
                   <p className="font-mono text-xs text-rose-200 mt-1">GÕ CHUỖI 5 TỪ VỰNG ĐỂ TIÊU DIỆT CHIẾN HẠM KHỔNG LỒ</p>
                 </div>
               ) : (
                 <div className="animate-pulse">
-                  <p className="font-mono text-xs text-cyan tracking-[.3em] uppercase">HOSTILE RECON SIGNATURES DETECTED</p>
+                  <p className="font-mono text-xs text-cyan tracking-[.3em] uppercase">PHÁT HIỆN HẠM ĐỘI QUÁI VẬT MỚI</p>
                   <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-cyan tracking-wider drop-shadow-[0_0_30px_rgba(85,244,255,0.8)]">
-                    WAVE {waveTransition.incomingWave.toString().padStart(2, "0")} INBOUND
+                    LÀN SÓNG {waveTransition.incomingWave.toString().padStart(2, "0")} TIẾP CẬN
                   </h2>
                 </div>
               )}
