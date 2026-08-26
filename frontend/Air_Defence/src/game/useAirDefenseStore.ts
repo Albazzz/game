@@ -993,7 +993,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   },
 
   tickGameLoop: (delta) => {
-    const { targets, lootItems, floatingTexts, hp, maxHp, shield, creditsEarned, hyperBeamCharge, screen, weakWords, isTransitioning, advanceToNextWave, introState, godMode, autoPilot, gameTimeScale, killTargetById } = get();
+    const { targets, lootItems, floatingTexts, hp, maxHp, shield, creditsEarned, hyperBeamCharge, hyperBeamPhase, screen, weakWords, isTransitioning, advanceToNextWave, introState, godMode, autoPilot, gameTimeScale, killTargetById } = get();
     if (screen !== "endless" && screen !== "pvp" && screen !== "sandbox") return;
     if (introState.active) return;
 
@@ -1084,7 +1084,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         });
       }
 
-      if (remainingTargets.length === 0 && !isTransitioning) {
+      if (remainingTargets.length === 0 && !isTransitioning && hyperBeamPhase === "idle") {
         advanceToNextWave();
       }
     }

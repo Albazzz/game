@@ -815,7 +815,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
       )}
 
       {/* Cinematic Wave Transition Overlay */}
-      {waveTransition.active && !introState.active && (
+      {waveTransition.active && !introState.active && hyperBeamPhase === "idle" && (
         <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300">
           {waveTransition.phase === "cleared" && (
             <div className="text-center animate-pulse">
