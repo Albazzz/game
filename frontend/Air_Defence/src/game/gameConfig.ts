@@ -25,7 +25,9 @@ export const GAME_CONFIG = {
     hyperBeamChargePerHit: 10,       // % Năng lượng Hyper Beam nạp sau mỗi lần gõ đúng 1 từ
     hyperBeamMaxCharge: 100,         // Ngưỡng năng lượng để kích hoạt chiêu cuối Hyper Beam (100%)
     hyperBeamBossDamage: 3,          // Sát thương chiêu cuối Hyper Beam gây ra cho Boss chiến hạm (3 HP)
-    hyperBeamDurationMs: 850,        // Thời gian duy trì hoạt cảnh chùm tia Hyper Beam cực đại (ms)
+    hyperBeamChargeTimeMs: 900,      // Giai đoạn 1: Khoảng nghỉ nạp tụ năng lượng trước khi bắn (900ms)
+    hyperBeamDurationMs: 3000,       // Giai đoạn 2: Duy trì chùm siêu Laser cực đại (3000ms = 3 giây)
+    hyperBeamCooldownMs: 1000,       // Giai đoạn 3: Khoảng chờ hồi phục và hút đá quý sau khi bắn (1000ms = 1 giây)
     dangerZoneThreshold: 75,         // Ngưỡng % màn hình quái tiến gần để kích hoạt cảnh báo đỏ
     damagePerEnemyReachBottom: 15,   // Sát thương mất máu khi quái vật chạm đáy phòng tuyến
     initialCredits: 1200             // Số Credits tân thủ khởi tạo khi vào game

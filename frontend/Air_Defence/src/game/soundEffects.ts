@@ -603,6 +603,32 @@ class SoundManager {
     } catch (e) {}
   }
 
+  playHyperBeamCharge() {
+    const vol = this.getCalculatedSfxVolume(0.9);
+    if (vol <= 0) return;
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.exponentialRampToValueAtTime(1600, now + 0.85);
+
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(vol * 0.7, now + 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.9);
+    } catch (e) {}
+  }
+
   playHyperBeam() {
     const vol = this.getCalculatedSfxVolume(GAME_CONFIG.AUDIO.hyperBeamVolume);
     if (vol <= 0) return;
@@ -610,22 +636,50 @@ class SoundManager {
       this.initContext();
       if (!this.ctx) return;
 
+      const now = this.ctx.currentTime;
+      const duration = 3.0;
+
+      // 1. Heavy Plasma Roar (Noise)
+      const bufferSize = this.ctx.sampleRate * duration;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+      const noiseFilter = this.ctx.createBiquadFilter();
+      noiseFilter.type = "bandpass";
+      noiseFilter.frequency.setValueAtTime(450, now);
+      noiseFilter.Q.setValueAtTime(1.5, now);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(vol * 0.8, now);
+      noiseGain.gain.setValueAtTime(vol * 0.75, now + duration - 0.4);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(this.ctx.destination);
+      noise.start(now);
+      noise.stop(now + duration);
+
+      // 2. Sub-bass & Sawtooth Blast
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-
       osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(1200, this.ctx.currentTime + 0.4);
-      osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 1.2);
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.linearRampToValueAtTime(80, now + 0.5);
+      osc.frequency.setValueAtTime(65, now + 1.0);
 
-      gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + 0.4);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.2);
+      gain.gain.setValueAtTime(vol * 0.9, now);
+      gain.gain.setValueAtTime(vol * 0.8, now + duration - 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      osc.start();
-      osc.stop(this.ctx.currentTime + 1.2);
+      osc.start(now);
+      osc.stop(now + duration);
     } catch (e) {}
   }
 

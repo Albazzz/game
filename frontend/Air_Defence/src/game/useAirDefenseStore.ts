@@ -213,6 +213,7 @@ interface AirDefenseState {
   inboundBoss: boolean;
   lastLaserTarget: { x: number; y: number } | null;
   hyperBeamActive: boolean;
+  hyperBeamPhase: "idle" | "charge" | "firing" | "cooldown";
   waveTransition: WaveTransitionInfo;
   isTransitioning: boolean;
   introState: MatchIntroState;
@@ -300,6 +301,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
   inboundBoss: false,
   lastLaserTarget: null,
   hyperBeamActive: false,
+  hyperBeamPhase: "idle",
   waveTransition: {
     active: false,
     phase: "none",
@@ -682,49 +684,73 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     const { hyperBeamCharge, targets, wave, score, advanceToNextWave, spawnLoot } = get();
     if (hyperBeamCharge < GAME_CONFIG.PLAYER.hyperBeamMaxCharge) return;
 
-    soundManager.playHyperBeam();
-
-    const updatedTargets: TargetWord[] = [];
-
-    targets.forEach((t) => {
-      if (t.isDead) return;
-
-      if (t.type === "MINI_BOSS") {
-        const currentHp = t.currentHp || 1;
-        const damage = GAME_CONFIG.PLAYER.hyperBeamBossDamage; // 3 HP sát thương từ config
-        if (currentHp <= damage) {
-          // Boss bị tiêu diệt
-          updatedTargets.push({ ...t, currentHp: 0, isDead: true });
-          spawnLoot(t.posX, Math.max(10, t.posY), true);
-        } else {
-          // Boss còn sống sau khi trừ 3 HP
-          const remainingHp = currentHp - damage;
-          updatedTargets.push({ ...t, currentHp: remainingHp, isDead: false });
-          // Rơi một lượng đá quý thưởng khi bắn trúng Boss
-          spawnLoot(t.posX, Math.max(10, t.posY), false);
-        }
-      } else {
-        // Quái vật thường bị hủy diệt tức thì
-        updatedTargets.push({ ...t, isDead: true });
-        spawnLoot(t.posX, Math.max(10, t.posY), false);
-      }
-    });
-
+    // Giai đoạn 1: Khoảng nghỉ nạp tụ năng lượng cực đại (900ms)
+    soundManager.playHyperBeamCharge();
     set({
       hyperBeamCharge: 0,
-      targets: updatedTargets,
-      score: score + 500 * wave,
-      screenShake: true,
-      hyperBeamActive: true
+      hyperBeamPhase: "charge",
+      hyperBeamActive: false,
+      screenShake: false
     });
 
+    // Giai đoạn 2: Khai hỏa chùm siêu Laser cực đại (Duy trì 3.0 giây)
     setTimeout(() => {
-      set({ hyperBeamActive: false, screenShake: false });
-      const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
-      if (aliveLeft === 0) {
-        advanceToNextWave();
-      }
-    }, GAME_CONFIG.PLAYER.hyperBeamDurationMs);
+      soundManager.playHyperBeam();
+
+      const updatedTargets: TargetWord[] = [];
+
+      targets.forEach((t) => {
+        if (t.isDead) return;
+
+        if (t.type === "MINI_BOSS") {
+          const currentHp = t.currentHp || 1;
+          const damage = GAME_CONFIG.PLAYER.hyperBeamBossDamage; // 3 HP sát thương từ config
+          if (currentHp <= damage) {
+            // Boss bị tiêu diệt
+            updatedTargets.push({ ...t, currentHp: 0, isDead: true });
+            spawnLoot(t.posX, Math.max(10, t.posY), true);
+          } else {
+            // Boss còn sống sau khi trừ 3 HP
+            const remainingHp = currentHp - damage;
+            updatedTargets.push({ ...t, currentHp: remainingHp, isDead: false });
+            // Rơi một lượng đá quý thưởng khi bắn trúng Boss
+            spawnLoot(t.posX, Math.max(10, t.posY), false);
+          }
+        } else {
+          // Quái vật thường bị hủy diệt tức thì
+          updatedTargets.push({ ...t, isDead: true });
+          spawnLoot(t.posX, Math.max(10, t.posY), false);
+        }
+      });
+
+      set({
+        targets: updatedTargets,
+        score: score + 500 * wave,
+        screenShake: true,
+        hyperBeamPhase: "firing",
+        hyperBeamActive: true
+      });
+
+      // Giai đoạn 3: Kết thúc chùm tia & Khoảng chờ hồi phục (1.0 giây)
+      setTimeout(() => {
+        set({
+          hyperBeamPhase: "cooldown",
+          hyperBeamActive: false,
+          screenShake: false
+        });
+
+        // Giai đoạn 4: Hoàn tất sau 1.0s cooldown -> Chuyển wave nếu sạch quái
+        setTimeout(() => {
+          set({ hyperBeamPhase: "idle" });
+          const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
+          if (aliveLeft === 0) {
+            advanceToNextWave();
+          }
+        }, GAME_CONFIG.PLAYER.hyperBeamCooldownMs);
+
+      }, GAME_CONFIG.PLAYER.hyperBeamDurationMs);
+
+    }, GAME_CONFIG.PLAYER.hyperBeamChargeTimeMs);
   },
 
   selectAugment: (augment) => {

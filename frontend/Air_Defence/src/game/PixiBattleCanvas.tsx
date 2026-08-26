@@ -28,6 +28,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
   const tickGameLoop = useAirDefenseStore((s) => s.tickGameLoop);
   const skipIntro = useAirDefenseStore((s) => s.skipIntro);
   const hyperBeamActive = useAirDefenseStore((s) => s.hyperBeamActive);
+  const hyperBeamPhase = useAirDefenseStore((s) => s.hyperBeamPhase);
 
   useEffect(() => {
     let isMounted = true;
@@ -586,9 +587,41 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         }
 
         // Hyper Beam Ultimate Super-Laser Render
-        const isHyperBeam = useAirDefenseStore.getState().hyperBeamActive;
+        const beamPhase = useAirDefenseStore.getState().hyperBeamPhase;
+        const isHyperBeam = beamPhase === "firing";
+        const isCharging = beamPhase === "charge";
+
         hyperBeamG.clear();
-        if (isHyperBeam) {
+
+        if (isCharging) {
+          const px = playerShipContainer.x;
+          const py = playerShipContainer.y - 20;
+          const pulse = 0.5 + Math.sin(Date.now() * 0.08) * 0.5;
+
+          // 1. Converging Energy Charge Vortex Rings
+          for (let r = 1; r <= 3; r++) {
+            const rad = 70 - ((Date.now() * 0.06 + r * 20) % 60);
+            if (rad > 6) {
+              hyperBeamG
+                .circle(px, py, rad)
+                .stroke({ color: 0x55f4ff, width: 2, alpha: (1 - rad / 70) * 0.85 });
+            }
+          }
+
+          // 2. High-Density Plasma Core Orb charging at nozzle
+          hyperBeamG.circle(px, py, 14 + pulse * 10).fill({ color: 0xffffff, alpha: 0.95 });
+          hyperBeamG.circle(px, py, 28 + pulse * 16).fill({ color: 0xa979ff, alpha: 0.45 });
+
+          // 3. Lightning tendrils gathering inwards
+          for (let i = 0; i < 4; i++) {
+            const angle = (Date.now() * 0.005 + i * (Math.PI / 2)) % (Math.PI * 2);
+            const dist = 40 + Math.random() * 25;
+            hyperBeamG
+              .moveTo(px + Math.cos(angle) * dist, py + Math.sin(angle) * dist)
+              .lineTo(px, py)
+              .stroke({ color: 0x55f4ff, width: 1.5, alpha: 0.8 });
+          }
+        } else if (isHyperBeam) {
           const px = playerShipContainer.x;
           const py = playerShipContainer.y - 22;
           const topY = -150;
@@ -601,7 +634,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             .stroke({
               color: 0x9d4edd,
               width: GAME_CONFIG.VISUALS.hyperBeamAuraWidth * pulse,
-              alpha: 0.45
+              alpha: 0.48
             });
 
           // 2. Cyan High-Energy Charged Core
@@ -611,7 +644,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             .stroke({
               color: 0x00f0ff,
               width: GAME_CONFIG.VISUALS.hyperBeamMidWidth * pulse,
-              alpha: 0.85
+              alpha: 0.88
             });
 
           // 3. Ultra-Dense Pure White Nuclear Laser Beam
@@ -634,20 +667,20 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
 
           // 5. Blinding Muzzle Flash Core Flare
           hyperBeamG
-            .circle(px, py, 32 * pulse)
+            .circle(px, py, 34 * pulse)
             .fill({ color: 0xffffff, alpha: 0.95 });
           hyperBeamG
-            .circle(px, py, 56 * pulse)
-            .fill({ color: 0x7b2cbf, alpha: 0.6 });
+            .circle(px, py, 60 * pulse)
+            .fill({ color: 0x7b2cbf, alpha: 0.65 });
 
           // 6. Searing Electric Arcs & Lightning Discharges across the screen
-          for (let s = 0; s < 8; s++) {
-            const arcY = topY + ((Date.now() * 1.5 + s * 140) % (py - topY));
+          for (let s = 0; s < 10; s++) {
+            const arcY = topY + ((Date.now() * 1.5 + s * 120) % (py - topY));
             const arcSpread = (Math.random() - 0.5) * (GAME_CONFIG.VISUALS.hyperBeamMidWidth * 1.6);
             hyperBeamG
               .moveTo(px, arcY)
               .lineTo(px + arcSpread, arcY + (Math.random() - 0.5) * 20)
-              .stroke({ color: 0xffffff, width: 2, alpha: 0.8 });
+              .stroke({ color: 0xffffff, width: 2, alpha: 0.85 });
           }
         }
       });
@@ -690,11 +723,25 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         screenShake ? "translate-x-1.5 translate-y-1.5 scale-[1.015]" : ""
       }`}
     >
-      {/* ⚡ EPIC HYPER BEAM SUPER-LASER BURST FLASH & BANNER */}
-      {hyperBeamActive && (
+      {/* ⚡ STAGE 1: HYPER BEAM CHARGING & CONVERGENCE OVERLAY */}
+      {hyperBeamPhase === "charge" && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center bg-radial from-violet-950/70 via-black/40 to-transparent backdrop-blur-[1.5px] animate-pulse">
+          <div className="text-center px-5 py-2.5 bg-black/80 rounded-2xl border border-amber-400/80 shadow-[0_0_40px_rgba(255,200,87,0.8)] backdrop-blur-md animate-pulse">
+            <p className="font-mono text-[10px] sm:text-xs font-bold text-[#ffc857] tracking-[.4em] uppercase">
+              ⚠ CHARGING ORBITAL CANNON // NẠP NĂNG LƯỢNG ⚠
+            </p>
+            <h2 className="font-display text-xl sm:text-3xl font-extrabold text-white tracking-widest mt-0.5 drop-shadow-[0_0_20px_#ffc857]">
+              »» NÉN PLASMA TỐI ĐẠI ««
+            </h2>
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ STAGE 2: EPIC HYPER BEAM SUPER-LASER BURST FLASH & BANNER */}
+      {hyperBeamPhase === "firing" && (
         <div className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center bg-radial from-violet-500/35 via-cyan-400/20 to-transparent mix-blend-screen animate-pulse">
           <div className="absolute inset-0 bg-white/25 animate-in fade-in duration-75" />
-          <div className="text-center px-4 py-2 bg-black/60 rounded-2xl border border-cyan-300/60 shadow-[0_0_50px_rgba(85,244,255,0.9)] backdrop-blur-sm animate-bounce">
+          <div className="text-center px-5 py-2.5 bg-black/70 rounded-2xl border border-cyan-300/70 shadow-[0_0_50px_rgba(85,244,255,0.9)] backdrop-blur-sm animate-bounce">
             <p className="font-mono text-[10px] sm:text-xs font-bold text-violet-300 tracking-[.4em] uppercase">
               MAXIMUM POWER DISCHARGE // ORBITAL MATRIX
             </p>
