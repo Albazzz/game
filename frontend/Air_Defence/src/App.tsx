@@ -646,31 +646,38 @@ function Debrief() {
 
 function RankArchive() {
   const [tab, setTab] = useState<"endless" | "ranked">("endless");
+  const { equippedShipId } = useAirDefenseStore();
+  const playerShipName = SHIPS_CATALOG.find((s) => s.id === equippedShipId)?.name || "Vanguard Alpha";
+
   const people =
     tab === "endless"
       ? [
-          ["1", "MIZUKI", "WAVE 42", "204,890"],
-          ["2", "AERIS", "WAVE 38", "182,410"],
-          ["3", "REN", "WAVE 35", "164,720"],
-          ["14", "YOU", "WAVE 18", "62,440"]
+          { rank: "1", name: "MIZUKI", ship: "Hyperion Phantom", shipTone: "amber" as const, stat: "WAVE 42", value: "204,890" },
+          { rank: "2", name: "AERIS", ship: "Frostbyte Sentinel", shipTone: "cyan" as const, stat: "WAVE 38", value: "182,410" },
+          { rank: "3", name: "REN", ship: "Aegis Defender", shipTone: "violet" as const, stat: "WAVE 35", value: "164,720" },
+          { rank: "14", name: "YOU", ship: playerShipName, shipTone: "cyan" as const, stat: "WAVE 18", value: "62,440", isUser: true }
         ]
       : [
-          ["1", "KAITO", "ELO 2,240", "CELESTIAL"],
-          ["2", "MIZUKI", "ELO 2,116", "CELESTIAL"],
-          ["3", "AERIS", "ELO 1,804", "DIAMOND"],
-          ["27", "YOU", "ELO 1,284", "GOLD"]
+          { rank: "1", name: "KAITO", ship: "Hyperion Phantom", shipTone: "amber" as const, stat: "ELO 2,240", value: "CELESTIAL" },
+          { rank: "2", name: "MIZUKI", ship: "Frostbyte Sentinel", shipTone: "cyan" as const, stat: "ELO 2,116", value: "CELESTIAL" },
+          { rank: "3", name: "AERIS", ship: "Aegis Defender", shipTone: "violet" as const, stat: "ELO 1,804", value: "DIAMOND" },
+          { rank: "27", name: "YOU", ship: playerShipName, shipTone: "cyan" as const, stat: "ELO 1,284", value: "GOLD", isUser: true }
         ];
 
   return (
     <div className="h-full flex flex-col justify-between overflow-y-auto pr-1 max-w-4xl mx-auto w-full">
-      <Header eyebrow="GLOBAL ARCHIVE / TELEMETRY" title="Bảng Xếp Hạng Phi Công" detail="Vinh danh những phi công phản xạ xuất sắc nhất trên toàn vũ trụ." />
+      <Header
+        eyebrow="GLOBAL ARCHIVE / TELEMETRY"
+        title="Bảng Xếp Hạng Phi Công"
+        detail="Vinh danh những phi công phản xạ xuất sắc nhất trên toàn vũ trụ cùng mẫu tàu chiến trang bị."
+      />
       <div className="mb-3 flex gap-2">
         {(["endless", "ranked"] as const).map((x) => (
           <button
             onClick={() => setTab(x)}
             key={x}
-            className={`min-h-10 rounded-xl border px-4 font-display text-xs ${
-              tab === x ? "border-cyan-300/60 bg-cyan-300/10 text-cyan" : "border-white/10 text-slate-400"
+            className={`min-h-10 rounded-xl border px-4 font-display text-xs transition ${
+              tab === x ? "border-cyan-300/60 bg-cyan-300/10 text-cyan font-bold" : "border-white/10 text-slate-400 hover:bg-white/5"
             }`}
           >
             {x === "endless" ? "ENDLESS TOP SCORE" : "PVP ELO RATING"}
@@ -678,26 +685,32 @@ function RankArchive() {
         ))}
       </div>
       <Panel className="overflow-hidden flex-1">
-        <div className="grid grid-cols-[.3fr_1fr_.8fr_.8fr] border-b border-white/10 px-4 py-2.5 font-mono text-[8px] text-slate-500">
+        <div className="grid grid-cols-[.3fr_1fr_1.1fr_.8fr_.8fr] border-b border-white/10 px-4 py-2.5 font-mono text-[8px] text-slate-500 uppercase tracking-wider">
           <span>#</span>
           <span>PHI CÔNG</span>
+          <span>TÀU CHIẾN TRANG BỊ</span>
           <span>{tab === "endless" ? "WAVE ĐẠT" : "ELO"}</span>
-          <span className="text-right">{tab === "endless" ? "ĐIỂM / RANK" : "HẠNG"}</span>
+          <span className="text-right">{tab === "endless" ? "ĐIỂM SỐ" : "HẠNG"}</span>
         </div>
         <div className="divide-y divide-white/5">
-          {people.map(([place, name, stat, value]) => (
-            <div key={name} className={`grid grid-cols-[.3fr_1fr_.8fr_.8fr] items-center px-4 py-3.5 ${name === "YOU" ? "bg-cyan-300/10" : ""}`}>
-              <span className={`font-display text-lg ${place === "1" ? "text-[#ffc857]" : "text-slate-400"}`}>{place}</span>
+          {people.map((p) => (
+            <div key={p.name} className={`grid grid-cols-[.3fr_1fr_1.1fr_.8fr_.8fr] items-center px-4 py-3.5 ${p.isUser ? "bg-cyan-300/10 border-l-2 border-cyan-300" : ""}`}>
+              <span className={`font-display text-lg ${p.rank === "1" ? "text-[#ffc857] font-bold" : "text-slate-400"}`}>
+                {p.rank}
+              </span>
               <span className="font-display text-sm font-bold">
-                {name}
-                {name === "YOU" && (
+                {p.name}
+                {p.isUser && (
                   <span className="ml-2">
                     <Pill>BẠN</Pill>
                   </span>
                 )}
               </span>
-              <span className="font-mono text-[9px] text-slate-400">{stat}</span>
-              <span className="text-right font-mono text-xs text-cyan">{value}</span>
+              <div>
+                <Pill tone={p.shipTone}>🛸 {p.ship}</Pill>
+              </div>
+              <span className="font-mono text-[10px] text-slate-400">{p.stat}</span>
+              <span className="text-right font-mono text-xs text-cyan font-bold">{p.value}</span>
             </div>
           ))}
         </div>
