@@ -22,7 +22,9 @@ export const GAME_CONFIG = {
   PLAYER: {
     baseHp: 100,                     // Máu cơ bản của phi thuyền người chơi (HP)
     baseShield: 0,                   // Giáp bảo vệ khởi đầu (Shield points)
-    hyperBeamChargePerHit: 10,       // % Năng lượng Hyper Beam nạp sau mỗi lần gõ đúng 1 từ
+    hyperBeamChargePerKill: 5,       // % Năng lượng Hyper Beam nạp khi tiêu diệt 1 quái vật thường (+5%)
+    hyperBeamChargePerBossKill: 50,  // % Năng lượng Hyper Beam nạp khi tiêu diệt Boss chiến hạm (+50%)
+    hyperBeamChargePerHit: 5,        // % Năng lượng Hyper Beam nạp khi gõ đúng 1 từ gây sát thương (+5%)
     hyperBeamMaxCharge: 100,         // Ngưỡng năng lượng để kích hoạt chiêu cuối Hyper Beam (100%)
     hyperBeamBossDamage: 3,          // Sát thương chiêu cuối Hyper Beam gây ra cho Boss chiến hạm (3 HP)
     hyperBeamChargeTimeMs: 900,      // Giai đoạn 1: Khoảng nghỉ nạp tụ năng lượng trước khi bắn (900ms)

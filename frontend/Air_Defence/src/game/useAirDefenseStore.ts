@@ -653,13 +653,18 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       }
       soundManager.playComboDing(newCombo);
 
+      let chargeDelta = GAME_CONFIG.PLAYER.hyperBeamChargePerHit;
+      if (isKilled) {
+        chargeDelta = hit.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.hyperBeamChargePerBossKill : GAME_CONFIG.PLAYER.hyperBeamChargePerKill;
+      }
+
       set({
         targets: updatedTargets,
         score: Math.round(score + scoreDelta),
         combo: newCombo,
         bestCombo: newBest,
         creditsEarned: creditsEarned + creditDelta,
-        hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + GAME_CONFIG.PLAYER.hyperBeamChargePerHit),
+        hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + chargeDelta),
         lastLaserTarget: { x: hit.posX, y: Math.max(5, hit.posY) },
         screenShake: hit.type === "MINI_BOSS"
       });
@@ -885,13 +890,18 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
     }
     soundManager.playComboDing(newCombo);
 
+    let chargeDelta = GAME_CONFIG.PLAYER.hyperBeamChargePerHit;
+    if (isKilled) {
+      chargeDelta = hit.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.hyperBeamChargePerBossKill : GAME_CONFIG.PLAYER.hyperBeamChargePerKill;
+    }
+
     set({
       targets: updatedTargets,
       score: Math.round(score + scoreDelta),
       combo: newCombo,
       bestCombo: newBest,
       creditsEarned: creditsEarned + creditDelta,
-      hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + GAME_CONFIG.PLAYER.hyperBeamChargePerHit),
+      hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + chargeDelta),
       lastLaserTarget: { x: hit.posX, y: Math.max(5, hit.posY) },
       screenShake: hit.type === "MINI_BOSS"
     });
