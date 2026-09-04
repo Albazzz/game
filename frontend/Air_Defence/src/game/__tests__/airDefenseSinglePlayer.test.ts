@@ -5,7 +5,8 @@ import {
   AUGMENTS_POOL,
   EXTENDED_VOCABULARY,
   BOSS_VOCABULARY,
-  generateWave
+  generateWave,
+  getComboMilestoneData
 } from "../useAirDefenseStore";
 import { GAME_CONFIG } from "../gameConfig";
 import { romajiToHiragana, matchesTargetWord } from "../romajiConverter";
@@ -270,6 +271,34 @@ describe("AIR DEFENCE SCI-FI 2.0 - SINGLE PLAYER MASTER TEST SUITE", () => {
 
       expect(ok).toBe(false);
       expect(useAirDefenseStore.getState().combo).toBe(0);
+      expect(useAirDefenseStore.getState().comboBreakActive).toBe(true);
+    });
+
+    it("TC-TYPE-08b: Đạt mốc Combo 5 kích hoạt activeComboMilestone và danh hiệu HEATED STREAK", () => {
+      useAirDefenseStore.setState({
+        combo: 4,
+        targets: [
+          {
+            id: "combo-target",
+            word: "星",
+            reading: "ほし",
+            meaning: "ngôi sao",
+            posX: 50,
+            posY: 20,
+            speed: 0.05,
+            type: "MONSTER_NORMAL"
+          }
+        ]
+      });
+
+      const ok = useAirDefenseStore.getState().submitAnswer("hoshi");
+      expect(ok).toBe(true);
+      expect(useAirDefenseStore.getState().combo).toBe(5);
+
+      const milestone = useAirDefenseStore.getState().activeComboMilestone;
+      expect(milestone).not.toBeNull();
+      expect(milestone?.milestone).toBe(5);
+      expect(milestone?.title).toContain("HEATED STREAK");
     });
 
     it("TC-TYPE-09: Tự động khóa mục tiêu Laser vào quái gần đáy nhất (highest posY) khi có nhiều quái trùng từ", () => {
@@ -1170,6 +1199,225 @@ describe("AIR DEFENCE SCI-FI 2.0 - SINGLE PLAYER MASTER TEST SUITE", () => {
           creditsEarned: 250
         })
       );
+    });
+  });
+
+  // ==========================================================================
+  // NHÓM 9: TC-DEV-VFX - KIỂM THỬ COMBO, MILESTONES COORDINATES & DEV VFX ACTIONS
+  // ==========================================================================
+  describe("NHÓM 9: TC-DEV-VFX - Combo Milestones, Screen Shake & Dev Actions", () => {
+    it("TC-DEV-01: submitAnswer gán tọa độ x, y vào milestoneData khi đạt mốc combo", () => {
+      useAirDefenseStore.setState({
+        combo: 4,
+        targets: [
+          {
+            id: "target-coord",
+            word: "星",
+            reading: "ほし",
+            meaning: "ngôi sao",
+            posX: 42,
+            posY: 25,
+            speed: 0.05,
+            type: "MONSTER_NORMAL"
+          }
+        ]
+      });
+
+      useAirDefenseStore.getState().submitAnswer("hoshi");
+      const state = useAirDefenseStore.getState();
+      expect(state.activeComboMilestone).not.toBeNull();
+      expect(state.activeComboMilestone?.x).toBe(42);
+      expect(state.activeComboMilestone?.y).toBe(25);
+      expect(state.screenShake).toBe(true);
+    });
+
+    it("TC-DEV-02: Screen shake tự tắt sau 400ms", () => {
+      useAirDefenseStore.setState({
+        combo: 4,
+        targets: [
+          {
+            id: "target-shake",
+            word: "星",
+            reading: "ほし",
+            meaning: "ngôi sao",
+            posX: 50,
+            posY: 20,
+            speed: 0.05,
+            type: "MONSTER_NORMAL"
+          }
+        ]
+      });
+
+      useAirDefenseStore.getState().submitAnswer("hoshi");
+      expect(useAirDefenseStore.getState().screenShake).toBe(true);
+
+      vi.advanceTimersByTime(GAME_CONFIG.VISUALS.laserBeamDurationMs + 10);
+      expect(useAirDefenseStore.getState().lastLaserTarget).toBeNull();
+      // Screen shake vẫn còn active sau 120ms laser kết thúc
+      expect(useAirDefenseStore.getState().screenShake).toBe(true);
+
+      vi.advanceTimersByTime(300);
+      // Đã qua 400ms -> screen shake tắt
+      expect(useAirDefenseStore.getState().screenShake).toBe(false);
+    });
+
+    it("TC-DEV-03: Dev Sandbox action setCombo và incrementCombo hoạt động chính xác", () => {
+      useAirDefenseStore.getState().setCombo(12);
+      expect(useAirDefenseStore.getState().combo).toBe(12);
+      expect(useAirDefenseStore.getState().bestCombo).toBe(12);
+
+      useAirDefenseStore.getState().incrementCombo(5);
+      expect(useAirDefenseStore.getState().combo).toBe(17);
+      expect(useAirDefenseStore.getState().bestCombo).toBe(17);
+
+      useAirDefenseStore.getState().setCombo(0);
+      expect(useAirDefenseStore.getState().combo).toBe(0);
+    });
+
+    it("TC-DEV-04: triggerComboMilestoneTest kích hoạt milestone splash, âm thanh và screenShake", () => {
+      useAirDefenseStore.getState().triggerComboMilestoneTest(20);
+      const state = useAirDefenseStore.getState();
+      expect(state.combo).toBe(20);
+      expect(state.activeComboMilestone?.milestone).toBe(20);
+      expect(state.activeComboMilestone?.tone).toBe("rose");
+      expect(state.screenShake).toBe(true);
+
+      vi.advanceTimersByTime(400);
+      expect(useAirDefenseStore.getState().screenShake).toBe(false);
+    });
+
+    it("TC-DEV-05: triggerScreenShakeTest bật rung màn hình và tự tắt sau 400ms", () => {
+      useAirDefenseStore.getState().triggerScreenShakeTest();
+      expect(useAirDefenseStore.getState().screenShake).toBe(true);
+
+      vi.advanceTimersByTime(400);
+      expect(useAirDefenseStore.getState().screenShake).toBe(false);
+    });
+
+    it("TC-DEV-06: triggerComboBreakTest reset combo về 0 và bật comboBreakActive trong 600ms", () => {
+      useAirDefenseStore.setState({ combo: 15 });
+      useAirDefenseStore.getState().triggerComboBreakTest();
+
+      expect(useAirDefenseStore.getState().combo).toBe(0);
+      expect(useAirDefenseStore.getState().comboBreakActive).toBe(true);
+
+      vi.advanceTimersByTime(600);
+      expect(useAirDefenseStore.getState().comboBreakActive).toBe(false);
+    });
+
+    it("TC-DEV-07: getComboMilestoneData trả về đúng dữ liệu theo các mốc 5, 10, 15, 20, 25, 30, 40 và null khi < 5", () => {
+      expect(getComboMilestoneData(0)).toBeNull();
+      expect(getComboMilestoneData(4)).toBeNull();
+      expect(getComboMilestoneData(7)).toBeNull();
+
+      const m5 = getComboMilestoneData(5, 30, 20);
+      expect(m5).not.toBeNull();
+      expect(m5?.milestone).toBe(5);
+      expect(m5?.tone).toBe("gold");
+      expect(m5?.x).toBe(30);
+      expect(m5?.y).toBe(20);
+
+      const m10 = getComboMilestoneData(10);
+      expect(m10?.milestone).toBe(10);
+      expect(m10?.tone).toBe("violet");
+
+      const m15 = getComboMilestoneData(15);
+      expect(m15?.milestone).toBe(15);
+      expect(m15?.tone).toBe("violet");
+
+      const m20 = getComboMilestoneData(20);
+      expect(m20?.milestone).toBe(20);
+      expect(m20?.tone).toBe("rose");
+
+      const m25 = getComboMilestoneData(25);
+      expect(m25?.milestone).toBe(25);
+      expect(m25?.tone).toBe("rose");
+
+      const m30 = getComboMilestoneData(30);
+      expect(m30?.milestone).toBe(30);
+      expect(m30?.tone).toBe("cyan");
+
+      const m40 = getComboMilestoneData(40);
+      expect(m40?.milestone).toBe(40);
+      expect(m40?.tone).toBe("cyan");
+    });
+
+    it("TC-DEV-08: killTargetById kích hoạt milestone khi đạt mốc combo (vd mốc 5) và tự dọn sau 1500ms", () => {
+      const target: TargetWord = {
+        id: "kill-milestone-target",
+        word: "空",
+        reading: "そら",
+        meaning: "bầu trời",
+        posX: 60,
+        posY: 30,
+        speed: 0.05,
+        type: "MONSTER_NORMAL"
+      };
+
+      useAirDefenseStore.setState({
+        combo: 4,
+        targets: [target]
+      });
+
+      useAirDefenseStore.getState().killTargetById("kill-milestone-target");
+
+      const state = useAirDefenseStore.getState();
+      expect(state.combo).toBe(5);
+      expect(state.activeComboMilestone).not.toBeNull();
+      expect(state.activeComboMilestone?.milestone).toBe(5);
+      expect(state.activeComboMilestone?.tone).toBe("gold");
+      expect(state.activeComboMilestone?.x).toBe(60);
+      expect(state.activeComboMilestone?.y).toBe(30);
+      expect(state.screenShake).toBe(true);
+
+      vi.advanceTimersByTime(400);
+      expect(useAirDefenseStore.getState().screenShake).toBe(false);
+
+      vi.advanceTimersByTime(1100); // 1500ms total
+      expect(useAirDefenseStore.getState().activeComboMilestone).toBeNull();
+    });
+
+    it("TC-DEV-09: setCombo và incrementCombo kích hoạt milestone splash khi chạm mốc", () => {
+      useAirDefenseStore.setState({ combo: 0 });
+
+      useAirDefenseStore.getState().incrementCombo(5);
+      expect(useAirDefenseStore.getState().combo).toBe(5);
+      expect(useAirDefenseStore.getState().activeComboMilestone?.milestone).toBe(5);
+      expect(useAirDefenseStore.getState().screenShake).toBe(true);
+
+      vi.advanceTimersByTime(1500);
+      expect(useAirDefenseStore.getState().activeComboMilestone).toBeNull();
+
+      useAirDefenseStore.getState().setCombo(10);
+      expect(useAirDefenseStore.getState().combo).toBe(10);
+      expect(useAirDefenseStore.getState().activeComboMilestone?.milestone).toBe(10);
+
+      vi.advanceTimersByTime(1500);
+      expect(useAirDefenseStore.getState().activeComboMilestone).toBeNull();
+    });
+
+    it("TC-DEV-10: submitAnswer dọn sạch activeComboMilestone khi gõ sai từ", () => {
+      useAirDefenseStore.setState({
+        combo: 5,
+        activeComboMilestone: { milestone: 5, title: "TEST", subtitle: "TEST", tone: "gold", id: 123 },
+        targets: [
+          {
+            id: "t1",
+            word: "太陽",
+            reading: "たいよう",
+            meaning: "mặt trời",
+            posX: 50,
+            posY: 20,
+            speed: 0.05,
+            type: "MONSTER_NORMAL"
+          }
+        ]
+      });
+
+      useAirDefenseStore.getState().submitAnswer("sai_roi");
+
+      expect(useAirDefenseStore.getState().combo).toBe(0);
+      expect(useAirDefenseStore.getState().activeComboMilestone).toBeNull();
     });
   });
 });

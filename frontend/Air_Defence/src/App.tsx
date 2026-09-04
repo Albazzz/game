@@ -1311,7 +1311,12 @@ function DevSandboxView() {
     playIntroSequence,
     fireHyperBeam,
     equippedShipId,
-    equipShip
+    equipShip,
+    setCombo,
+    incrementCombo,
+    triggerComboMilestoneTest,
+    triggerScreenShakeTest,
+    triggerComboBreakTest
   } = useAirDefenseStore();
 
   return (
@@ -1599,6 +1604,75 @@ function DevSandboxView() {
                   </button>
                 );
               })}
+            </div>
+          </Panel>
+
+          {/* 6. Combo & VFX Testing Deck */}
+          <Panel className="p-3 border-rose-400/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[9px] text-rose-300 font-bold tracking-widest uppercase">
+                6. KIỂM THỬ COMBO & VFX
+              </span>
+              <span className="font-mono text-[9px] text-[#ff4d6d] font-bold">
+                COMBO: ×{combo}
+              </span>
+            </div>
+
+            {/* Quick Milestone Triggers */}
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="font-mono text-[8px] text-slate-400 uppercase tracking-wider whitespace-nowrap">Mốc Splash:</span>
+              {[5, 10, 20, 30].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => triggerComboMilestoneTest(m)}
+                  className="flex-1 py-1 rounded border border-rose-400/40 bg-rose-500/10 hover:bg-rose-500/25 font-mono text-[9px] font-bold text-rose-300 transition"
+                  title={`Test Combo Milestone Splash ×${m}`}
+                >
+                  ×{m}
+                </button>
+              ))}
+            </div>
+
+            {/* Increment / Reset Controls */}
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
+              <button
+                onClick={() => incrementCombo(1)}
+                className="py-1 rounded border border-cyan-300/40 bg-cyan-300/10 hover:bg-cyan-300/20 font-mono text-[9px] font-bold text-cyan transition text-center"
+              >
+                +1 Combo
+              </button>
+              <button
+                onClick={() => incrementCombo(5)}
+                className="py-1 rounded border border-cyan-300/40 bg-cyan-300/10 hover:bg-cyan-300/20 font-mono text-[9px] font-bold text-cyan transition text-center"
+              >
+                +5 Combo
+              </button>
+              <button
+                onClick={() => setCombo(0)}
+                className="py-1 rounded border border-white/15 bg-white/5 hover:bg-white/10 font-mono text-[9px] text-slate-300 transition text-center"
+              >
+                Reset 0
+              </button>
+            </div>
+
+            {/* VFX Shaking & Break Triggers */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                onClick={triggerScreenShakeTest}
+                className="py-1.5 rounded border border-amber-300/40 bg-amber-300/10 hover:bg-amber-300/20 font-mono text-[9px] font-bold text-[#ffc857] transition flex items-center justify-center gap-1"
+                title="Test Rung Màn Hình (400ms Rumble)"
+              >
+                <span>📳</span>
+                <span>Rung Màn Hình</span>
+              </button>
+              <button
+                onClick={triggerComboBreakTest}
+                className="py-1.5 rounded border border-rose-500/40 bg-rose-500/15 hover:bg-rose-500/30 font-mono text-[9px] font-bold text-rose-400 transition flex items-center justify-center gap-1"
+                title="Test Đứt Chuỗi Combo Overheat"
+              >
+                <span>⚡</span>
+                <span>Đứt Chuỗi</span>
+              </button>
             </div>
           </Panel>
         </div>
