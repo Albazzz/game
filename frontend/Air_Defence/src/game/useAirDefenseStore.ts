@@ -1327,13 +1327,6 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         }
       });
 
-      // Update Radar Lock-on targeting to the lowest enemy
-      const livingTargets = remainingTargets.filter((t) => !t.isDead);
-      if (livingTargets.length > 0) {
-        const lowest = livingTargets.reduce((prev, curr) => (curr.posY > prev.posY ? curr : prev), livingTargets[0]);
-        set({ lastLaserTarget: { x: lowest.posX, y: lowest.posY } });
-      }
-
       if (damageTaken > 0 && !godMode) {
         soundManager.playDamage();
         let nextShield = shield;
