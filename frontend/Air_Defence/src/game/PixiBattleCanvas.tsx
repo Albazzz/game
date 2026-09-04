@@ -3,6 +3,7 @@ import { Application, Assets, Container, Graphics, Sprite, Text, TextStyle, Text
 import { useAirDefenseStore } from "./useAirDefenseStore";
 import { GAME_CONFIG } from "./gameConfig";
 import { LootItem } from "./types";
+import { ComboSplashOverlay } from "./ComboSplashOverlay";
 
 interface ExplosionAnim {
   container: Container;
@@ -160,6 +161,9 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
         playerShipContainer.addChild(flameG);
         exhaustSprites.push(flameG);
       }
+
+      const comboAuraG = new Graphics();
+      playerShipContainer.addChildAt(comboAuraG, 0);
 
       playerShipContainer.x = app.screen.width / 2;
       playerShipContainer.y = app.screen.height * 0.85;
@@ -588,6 +592,54 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
             .stroke({ color: 0xa979ff, width: GAME_CONFIG.VISUALS.laserGlowWidth, alpha: 0.35 });
         }
 
+        // Dynamic Combo Hull & Engine Aura Render
+        const currentCombo = useAirDefenseStore.getState().combo;
+        comboAuraG.clear();
+        if (currentCombo >= 5) {
+          comboAuraG.visible = true;
+          const auraTime = performance.now() * 0.003;
+          const radius = 32 + Math.sin(auraTime * 4) * 2;
+
+          if (currentCombo >= 30) {
+            // Tier 5: Supernova Cosmic Aurora
+            comboAuraG.circle(0, 0, radius + 10).stroke({ color: 0x55f4ff, width: 3, alpha: 0.8 });
+            comboAuraG.circle(0, 0, radius + 4).stroke({ color: 0xffd700, width: 2, alpha: 0.6 });
+            comboAuraG.circle(0, 0, radius + 18).stroke({ color: 0xc3a6ff, width: 1, alpha: 0.4 });
+            for (let i = 0; i < 4; i++) {
+              const angle = auraTime * 2 + (i * Math.PI) / 2;
+              const ox = Math.cos(angle) * (radius + 12);
+              const oy = Math.sin(angle) * (radius + 12);
+              comboAuraG.circle(ox, oy, 3.5).fill({ color: 0x55f4ff, alpha: 0.9 });
+            }
+          } else if (currentCombo >= 20) {
+            // Tier 4: Godlike Cyber Flame & Lightning
+            comboAuraG.circle(0, 0, radius + 8).stroke({ color: 0xff4d6d, width: 2.5, alpha: 0.75 });
+            comboAuraG.circle(0, 0, radius + 2).stroke({ color: 0xff1a4b, width: 1.5, alpha: 0.5 });
+            for (let i = 0; i < 3; i++) {
+              const angle = auraTime * 2.5 + (i * Math.PI * 2) / 3;
+              const ox = Math.cos(angle) * (radius + 8);
+              const oy = Math.sin(angle) * (radius + 8);
+              comboAuraG.circle(ox, oy, 3).fill({ color: 0xff4d6d, alpha: 0.85 });
+            }
+          } else if (currentCombo >= 10) {
+            // Tier 3: Hyper Plasma Violet
+            comboAuraG.circle(0, 0, radius + 6).stroke({ color: 0xc3a6ff, width: 2, alpha: 0.7 });
+            comboAuraG.circle(0, 0, radius).stroke({ color: 0xa979ff, width: 1.5, alpha: 0.45 });
+            for (let i = 0; i < 2; i++) {
+              const angle = auraTime * 1.8 + i * Math.PI;
+              const ox = Math.cos(angle) * (radius + 6);
+              const oy = Math.sin(angle) * (radius + 6);
+              comboAuraG.circle(ox, oy, 2.5).fill({ color: 0xc3a6ff, alpha: 0.8 });
+            }
+          } else {
+            // Tier 2: Heat Streak Gold
+            comboAuraG.circle(0, 0, radius + 4).stroke({ color: 0xffc857, width: 1.8, alpha: 0.65 });
+            comboAuraG.circle(0, 0, radius - 2).stroke({ color: 0xffaa00, width: 1, alpha: 0.35 });
+          }
+        } else {
+          comboAuraG.visible = false;
+        }
+
         // Hyper Beam Ultimate Super-Laser Render
         const beamPhase = useAirDefenseStore.getState().hyperBeamPhase;
         const isHyperBeam = beamPhase === "firing";
@@ -767,6 +819,9 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
           {ft.text}
         </div>
       ))}
+
+      {/* ⚡ COMBO MILESTONE & REACTION SPLASH BADGE OVERLAY */}
+      <ComboSplashOverlay />
 
       {/* 🚀 MATCH LAUNCH INTRO OVERLAY (Cinematic 3-Stage Bootup) */}
       {introState.active && (

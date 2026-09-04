@@ -4,6 +4,7 @@ import { GAME_CONFIG } from "./gameConfig";
 import { soundManager } from "./soundEffects";
 import { fetchShopDataApi, buyShipApi, equipShipApi, upgradeTalentApi, recordMatchFinishApi, fetchLeaderboardApi, LeaderboardItem } from "./apiClient";
 import { matchesTargetWord, romajiToHiragana } from "./romajiConverter";
+import { ComboMilestoneData } from "./ComboSplashOverlay";
 
 export const SHIPS_CATALOG = GAME_CONFIG.SHIPS;
 
@@ -214,6 +215,8 @@ interface AirDefenseState {
   screenShake: boolean;
   inboundBoss: boolean;
   lastLaserTarget: { x: number; y: number } | null;
+  activeComboMilestone: ComboMilestoneData | null;
+  comboBreakActive: boolean;
   hyperBeamActive: boolean;
   hyperBeamPhase: "idle" | "charge" | "firing" | "cooldown";
   waveTransition: WaveTransitionInfo;
@@ -489,6 +492,8 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       screenShake: false,
       inboundBoss: false,
       lastLaserTarget: null,
+      activeComboMilestone: null,
+      comboBreakActive: false,
       isTransitioning: false,
       waveTransition: {
         active: false,
@@ -764,6 +769,41 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         }
       }
 
+      // 5. Floating Combat Number (+Điểm kèm Combo Multiplier)
+      const hitColor = newCombo >= 20 ? "#ff4d6d" : newCombo >= 10 ? "#c3a6ff" : newCombo >= 5 ? "#ffc857" : "#55f4ff";
+      extraFloating = [
+        ...extraFloating,
+        {
+          id: `hit-${Date.now()}-${Math.random()}`,
+          text: `+${scoreDelta.toLocaleString()} [×${newCombo}]`,
+          color: hitColor,
+          x: hit.posX,
+          y: Math.max(8, hit.posY - 4),
+          opacity: 1,
+          life: 1.2
+        }
+      ];
+
+      // 6. Combo Milestones Feedback (5, 10, 15, 20, 25, 30+)
+      let milestoneData: ComboMilestoneData | null = null;
+      if (newCombo === 5) {
+        milestoneData = { milestone: 5, title: "⚡ HEATED STREAK ×5", subtitle: "GIA TỐC HỎA LỰC // +15% ĐIỂM SỐ", tone: "gold", id: Date.now() };
+      } else if (newCombo === 10) {
+        milestoneData = { milestone: 10, title: "🔥 HYPER VELOCITY ×10", subtitle: "TỐC ĐỘ PHẢN XẠ CỰC ĐẠI // +30% ĐIỂM SỐ", tone: "violet", id: Date.now() };
+      } else if (newCombo === 15) {
+        milestoneData = { milestone: 15, title: "🚀 APEX STRIKER ×15", subtitle: "PHẢN XẠ TUYỆT ĐỐI // +45% ĐIỂM SỐ", tone: "violet", id: Date.now() };
+      } else if (newCombo === 20) {
+        milestoneData = { milestone: 20, title: "⚡ GODLIKE TYPIST ×20", subtitle: "BẬC THẦY GÕ PHÍM // +60% ĐIỂM SỐ", tone: "rose", id: Date.now() };
+      } else if (newCombo === 25) {
+        milestoneData = { milestone: 25, title: "💥 UNSTOPPABLE FORCE ×25", subtitle: "CHIẾN HẠM BẤT KHẢ CHIẾN BẠI // +75% ĐIỂM SỐ", tone: "rose", id: Date.now() };
+      } else if (newCombo >= 30 && (newCombo === 30 || newCombo % 10 === 0)) {
+        milestoneData = { milestone: newCombo, title: `🌟 SUPERNOVA OVERLOAD ×${newCombo}`, subtitle: "CỰC QUANG VŨ TRỤ // TỐI ĐA HỆ SỐ ĐIỂM", tone: "cyan", id: Date.now() };
+      }
+
+      if (milestoneData) {
+        soundManager.playComboMilestone(milestoneData.milestone);
+      }
+
       set({
         targets: updatedTargets,
         score: Math.round(score + scoreDelta),
@@ -772,7 +812,8 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         creditsEarned: creditsEarned + creditDelta,
         hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + chargeDelta),
         lastLaserTarget: { x: hit.posX, y: Math.max(5, hit.posY) },
-        screenShake: hit.type === "MINI_BOSS",
+        activeComboMilestone: milestoneData || get().activeComboMilestone,
+        screenShake: hit.type === "MINI_BOSS" || (newCombo >= 10 && newCombo % 10 === 0),
         freezeTimer: newFreeze,
         floatingTexts: extraFloating
       });
@@ -793,7 +834,16 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       const newWeakWords = missed
         ? [...get().weakWords, { word: missed.word, reading: missed.reading, meaning: missed.meaning, note: "Gõ sai" }]
         : get().weakWords;
-      set({ combo: 0, weakWords: newWeakWords });
+
+      const prevCombo = get().combo;
+      if (prevCombo >= 5) {
+        soundManager.playComboBreak();
+        set({ combo: 0, weakWords: newWeakWords, comboBreakActive: true });
+        setTimeout(() => set({ comboBreakActive: false }), 600);
+      } else {
+        set({ combo: 0, weakWords: newWeakWords });
+      }
+
       return false;
     }
   },
@@ -1338,9 +1388,19 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
           nextHp = Math.max(0, nextHp - damageTaken);
         }
 
+        const prevCombo = get().combo;
+        let shouldBreak = false;
+        if (prevCombo >= 5) {
+          shouldBreak = true;
+          soundManager.playComboBreak();
+          setTimeout(() => set({ comboBreakActive: false }), 600);
+        }
+
         set({
           hp: nextHp,
           shield: nextShield,
+          combo: 0,
+          comboBreakActive: shouldBreak,
           targets: remainingTargets,
           weakWords: missedList,
           dangerZoneActive: hasDanger,

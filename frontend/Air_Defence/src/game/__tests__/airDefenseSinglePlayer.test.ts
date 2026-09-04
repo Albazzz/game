@@ -270,6 +270,34 @@ describe("AIR DEFENCE SCI-FI 2.0 - SINGLE PLAYER MASTER TEST SUITE", () => {
 
       expect(ok).toBe(false);
       expect(useAirDefenseStore.getState().combo).toBe(0);
+      expect(useAirDefenseStore.getState().comboBreakActive).toBe(true);
+    });
+
+    it("TC-TYPE-08b: Đạt mốc Combo 5 kích hoạt activeComboMilestone và danh hiệu HEATED STREAK", () => {
+      useAirDefenseStore.setState({
+        combo: 4,
+        targets: [
+          {
+            id: "combo-target",
+            word: "星",
+            reading: "ほし",
+            meaning: "ngôi sao",
+            posX: 50,
+            posY: 20,
+            speed: 0.05,
+            type: "MONSTER_NORMAL"
+          }
+        ]
+      });
+
+      const ok = useAirDefenseStore.getState().submitAnswer("hoshi");
+      expect(ok).toBe(true);
+      expect(useAirDefenseStore.getState().combo).toBe(5);
+
+      const milestone = useAirDefenseStore.getState().activeComboMilestone;
+      expect(milestone).not.toBeNull();
+      expect(milestone?.milestone).toBe(5);
+      expect(milestone?.title).toContain("HEATED STREAK");
     });
 
     it("TC-TYPE-09: Tự động khóa mục tiêu Laser vào quái gần đáy nhất (highest posY) khi có nhiều quái trùng từ", () => {

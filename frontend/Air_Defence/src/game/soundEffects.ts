@@ -698,20 +698,110 @@ class SoundManager {
       this.initContext();
       if (!this.ctx) return;
 
+      // Pentatonic scale frequencies (C5 -> A6) for musical harmony on continuous typing
+      const pentatonic = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00];
+      const baseFreq = pentatonic[(combo - 1) % pentatonic.length];
+      const octaveShift = Math.floor((combo - 1) / pentatonic.length);
+      const freq = Math.min(2800, baseFreq * Math.pow(1.15, octaveShift));
+
+      const now = this.ctx.currentTime;
+
+      // Fundamental tone
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
+      osc.type = combo >= 10 ? "triangle" : "sine";
+      osc.frequency.setValueAtTime(freq, now);
 
-      const freq = 440 * Math.pow(1.059463, Math.min(24, combo * 2));
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      // Shimmering overtone for higher combos
+      const overtone = this.ctx.createOscillator();
+      const overGain = this.ctx.createGain();
+      overtone.type = "sine";
+      overtone.frequency.setValueAtTime(freq * 2, now);
 
-      gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(vol * 0.7, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + (combo >= 20 ? 0.22 : 0.16));
+
+      overGain.gain.setValueAtTime(vol * (combo >= 10 ? 0.35 : 0.15), now);
+      overGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      osc.start();
-      osc.stop(this.ctx.currentTime + 0.2);
+      overtone.connect(overGain);
+      overGain.connect(this.ctx.destination);
+
+      osc.start(now);
+      overtone.start(now);
+      osc.stop(now + 0.25);
+      overtone.stop(now + 0.15);
+    } catch (e) {}
+  }
+
+  playComboMilestone(milestone: number) {
+    const vol = this.getCalculatedSfxVolume(1.0);
+    if (vol <= 0) return;
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      // 3-Stage Rising Cyber Chime Arpeggio
+      const chords =
+        milestone >= 30
+          ? [523.25, 659.25, 783.99, 1046.5, 1318.51] // Supernova Pentatonic chord
+          : milestone >= 20
+          ? [440.0, 554.37, 659.25, 880.0] // Godlike Major chord
+          : milestone >= 10
+          ? [349.23, 440.0, 523.25, 698.46] // Hyper chord
+          : [261.63, 329.63, 392.0, 523.25]; // Streak chord
+
+      chords.forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        const filter = this.ctx!.createBiquadFilter();
+
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(1200, now + idx * 0.05);
+        filter.frequency.linearRampToValueAtTime(2400, now + idx * 0.05 + 0.25);
+
+        gain.gain.setValueAtTime(0.001, now + idx * 0.05);
+        gain.gain.linearRampToValueAtTime(vol * 0.45, now + idx * 0.05 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.45);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx!.destination);
+
+        osc.start(now + idx * 0.05);
+        osc.stop(now + idx * 0.05 + 0.5);
+      });
+    } catch (e) {}
+  }
+
+  playComboBreak() {
+    const vol = this.getCalculatedSfxVolume(0.65);
+    if (vol <= 0) return;
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.18);
+
+      gain.gain.setValueAtTime(vol * 0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
     } catch (e) {}
   }
 
