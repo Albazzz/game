@@ -7,6 +7,8 @@ export interface ComboMilestoneData {
   subtitle: string;
   tone: "gold" | "violet" | "rose" | "cyan" | "rainbow";
   id: number;
+  x?: number;
+  y?: number;
 }
 
 export const ComboSplashOverlay: React.FC = () => {
@@ -18,91 +20,76 @@ export const ComboSplashOverlay: React.FC = () => {
       setAnimatingMilestone(activeComboMilestone);
       const timer = setTimeout(() => {
         setAnimatingMilestone(null);
-      }, 1200);
+      }, 1400);
       return () => clearTimeout(timer);
     }
-  }, [activeComboMilestone]);
+  }, [activeComboMilestone?.id]);
 
   // Màu sắc theo Tone
   const getToneStyles = (tone: ComboMilestoneData["tone"]) => {
     switch (tone) {
       case "gold":
         return {
-          badgeBorder: "border-amber-400/90 shadow-[0_0_50px_rgba(255,200,87,0.7)] bg-amber-950/80",
-          textGlow: "text-[#ffc857] drop-shadow-[0_0_20px_rgba(255,200,87,0.9)]",
-          subText: "text-amber-200",
-          ringColor: "rgba(255,200,87,0.5)"
+          badgeBorder: "border-amber-400/90 shadow-[0_0_35px_rgba(255,200,87,0.7)] bg-amber-950/90",
+          textGlow: "text-[#ffc857] drop-shadow-[0_0_15px_rgba(255,200,87,0.9)]",
+          subText: "text-amber-200"
         };
       case "violet":
         return {
-          badgeBorder: "border-violet-400/90 shadow-[0_0_60px_rgba(169,121,255,0.8)] bg-violet-950/80",
-          textGlow: "text-[#c3a6ff] drop-shadow-[0_0_25px_rgba(195,166,255,1)]",
-          subText: "text-violet-200",
-          ringColor: "rgba(169,121,255,0.6)"
+          badgeBorder: "border-violet-400/90 shadow-[0_0_35px_rgba(169,121,255,0.8)] bg-violet-950/90",
+          textGlow: "text-[#c3a6ff] drop-shadow-[0_0_18px_rgba(195,166,255,1)]",
+          subText: "text-violet-200"
         };
       case "rose":
         return {
-          badgeBorder: "border-rose-400/90 shadow-[0_0_70px_rgba(255,77,109,0.9)] bg-rose-950/85",
-          textGlow: "text-[#ff4d6d] drop-shadow-[0_0_30px_rgba(255,77,109,1)]",
-          subText: "text-rose-200",
-          ringColor: "rgba(255,77,109,0.7)"
+          badgeBorder: "border-rose-400/90 shadow-[0_0_40px_rgba(255,77,109,0.9)] bg-rose-950/90",
+          textGlow: "text-[#ff4d6d] drop-shadow-[0_0_20px_rgba(255,77,109,1)]",
+          subText: "text-rose-200"
         };
       case "rainbow":
       case "cyan":
       default:
         return {
-          badgeBorder: "border-cyan-300 shadow-[0_0_80px_rgba(85,244,255,1)] bg-cyan-950/85",
-          textGlow: "text-cyan drop-shadow-[0_0_35px_rgba(85,244,255,1)]",
-          subText: "text-cyan-100",
-          ringColor: "rgba(85,244,255,0.8)"
+          badgeBorder: "border-cyan-300 shadow-[0_0_40px_rgba(85,244,255,1)] bg-cyan-950/90",
+          textGlow: "text-cyan drop-shadow-[0_0_25px_rgba(85,244,255,1)]",
+          subText: "text-cyan-100"
         };
     }
   };
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-35 overflow-hidden flex items-center justify-center">
-      {/* 1. COMBO MILESTONE SPLASH BADGE (Nảy giữa màn hình rồi trượt lên) */}
+    <div className="pointer-events-none absolute inset-0 z-35 overflow-hidden">
+      {/* 1. LOCAL ENEMY DESTROYED COMBO POPUP BADGE (Nảy ngay tại vị trí quái bị bắn nổ) */}
       {animatingMilestone && (() => {
         const styles = getToneStyles(animatingMilestone.tone);
+        const posX = animatingMilestone.x ?? 50;
+        const posY = Math.max(10, Math.min(85, animatingMilestone.y ?? 35));
         return (
           <div
-            key={animatingMilestone.id}
-            className="animate-combo-splash flex flex-col items-center justify-center text-center select-none"
+            key={`local-${animatingMilestone.id}`}
+            className="absolute -translate-x-1/2 -translate-y-1/2 animate-enemy-combo-pop z-40 pointer-events-none"
+            style={{
+              left: `${posX}%`,
+              top: `${posY}%`
+            }}
           >
-            {/* Holographic Shockwave Ring */}
-            <div
-              className="absolute size-48 sm:size-64 rounded-full border-2 animate-ping"
-              style={{ borderColor: styles.ringColor }}
-            />
-
-            {/* Main Cyber Badge */}
-            <div
-              className={`relative px-6 py-3.5 sm:px-8 sm:py-4 rounded-2xl border-2 backdrop-blur-md ${styles.badgeBorder} flex flex-col items-center`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="animate-spin text-lg sm:text-xl">⚡</span>
-                <p className="font-mono text-[10px] sm:text-xs font-extrabold tracking-[.3em] uppercase text-white">
-                  MILESTONE REACHED // CHUỖI TÁC CHIẾN
-                </p>
-                <span className="animate-spin text-lg sm:text-xl">⚡</span>
+            <div className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border-2 backdrop-blur-md shadow-[0_0_35px_rgba(255,255,255,0.5)] ${styles.badgeBorder} flex items-center gap-2 whitespace-nowrap`}>
+              <span className="text-base sm:text-lg animate-bounce">⚡</span>
+              <div className="flex flex-col items-center">
+                <span className={`font-display text-sm sm:text-base font-black tracking-wider ${styles.textGlow}`}>
+                  {animatingMilestone.title}
+                </span>
+                {animatingMilestone.subtitle ? (
+                  <span className={`font-mono text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest ${styles.subText}`}>
+                    {animatingMilestone.subtitle}
+                  </span>
+                ) : (
+                  <span className="font-mono text-[8px] font-extrabold text-white uppercase tracking-widest">
+                    +100% COMBO BONUS
+                  </span>
+                )}
               </div>
-
-              <h1
-                className={`font-display text-3xl sm:text-5xl font-black tracking-widest mt-1 ${styles.textGlow}`}
-              >
-                {animatingMilestone.title}
-              </h1>
-
-              <p className={`font-mono text-[10px] sm:text-xs font-semibold tracking-wider mt-1 ${styles.subText}`}>
-                {animatingMilestone.subtitle}
-              </p>
-
-              {/* Bottom decorative tech ticks */}
-              <div className="flex items-center gap-1.5 mt-2.5">
-                <span className="h-1 w-6 rounded-full bg-white/80" />
-                <span className="h-1 w-12 rounded-full bg-white" />
-                <span className="h-1 w-6 rounded-full bg-white/80" />
-              </div>
+              <span className="text-base sm:text-lg animate-bounce">⚡</span>
             </div>
           </div>
         );

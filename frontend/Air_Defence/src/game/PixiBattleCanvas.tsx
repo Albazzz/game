@@ -774,7 +774,7 @@ export const PixiBattleCanvas: React.FC<{ isPvP?: boolean }> = ({ isPvP = false 
     <div
       ref={containerRef}
       className={`relative w-full h-full rounded-2xl overflow-hidden border border-cyan-300/30 bg-[#070a12] transition-transform duration-75 ${
-        screenShake ? "translate-x-1.5 translate-y-1.5 scale-[1.015]" : ""
+        screenShake ? "animate-screen-shake" : ""
       }`}
     >
       {/* ⚡ STAGE 1: HYPER BEAM CHARGING OVERLAY (Chỉ hiện ở 0.9s nén năng lượng) */}

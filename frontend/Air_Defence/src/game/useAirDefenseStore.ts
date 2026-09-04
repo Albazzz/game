@@ -271,6 +271,11 @@ interface AirDefenseState {
   triggerWaveClear: () => void;
   resetSandbox: () => void;
   playIntroSequence: (targetScreen?: Screen) => void;
+  setCombo: (val: number) => void;
+  incrementCombo: (amt: number) => void;
+  triggerComboMilestoneTest: (milestone: number) => void;
+  triggerScreenShakeTest: () => void;
+  triggerComboBreakTest: () => void;
 }
 
 const ROMAJI_TO_HIRAGANA: Record<string, string> = {
@@ -333,6 +338,30 @@ export function isAnswerMatch(input: string, target: TargetWord): boolean {
   }
 
   return false;
+}
+
+export function getComboMilestoneData(combo: number, posX?: number, posY?: number): ComboMilestoneData | null {
+  if (combo < 5) return null;
+  const id = Date.now() + Math.random();
+  if (combo === 5) {
+    return { milestone: 5, title: "⚡ HEATED STREAK ×5", subtitle: "GIA TỐC HỎA LỰC // +15% ĐIỂM SỐ", tone: "gold", id, x: posX, y: posY };
+  }
+  if (combo === 10) {
+    return { milestone: 10, title: "🔥 HYPER VELOCITY ×10", subtitle: "TỐC ĐỘ PHẢN XẠ CỰC ĐẠI // +30% ĐIỂM SỐ", tone: "violet", id, x: posX, y: posY };
+  }
+  if (combo === 15) {
+    return { milestone: 15, title: "🚀 APEX STRIKER ×15", subtitle: "PHẢN XẠ TUYỆT ĐỐI // +45% ĐIỂM SỐ", tone: "violet", id, x: posX, y: posY };
+  }
+  if (combo === 20) {
+    return { milestone: 20, title: "⚡ GODLIKE TYPIST ×20", subtitle: "BẬC THẦY GÕ PHÍM // +60% ĐIỂM SỐ", tone: "rose", id, x: posX, y: posY };
+  }
+  if (combo === 25) {
+    return { milestone: 25, title: "💥 UNSTOPPABLE FORCE ×25", subtitle: "CHIẾN HẠM BẤT KHẢ CHIẾN BẠI // +75% ĐIỂM SỐ", tone: "rose", id, x: posX, y: posY };
+  }
+  if (combo >= 30 && (combo === 30 || combo % 10 === 0 || combo % 5 === 0)) {
+    return { milestone: combo, title: `🌟 SUPERNOVA OVERLOAD ×${combo}`, subtitle: "CỰC QUANG VŨ TRỤ // TỐI ĐA HỆ SỐ ĐIỂM", tone: "cyan", id, x: posX, y: posY };
+  }
+  return null;
 }
 
 let autoPilotCounter = 0;
@@ -435,6 +464,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         dangerZoneActive: false,
         screenShake: false,
         inboundBoss: false,
+        activeComboMilestone: null,
         isTransitioning: false,
         introState: { active: false, phase: "done" },
         waveTransition: { active: false, phase: "none", clearedWave: 0, incomingWave: 1, isBoss: false }
@@ -785,24 +815,13 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       ];
 
       // 6. Combo Milestones Feedback (5, 10, 15, 20, 25, 30+)
-      let milestoneData: ComboMilestoneData | null = null;
-      if (newCombo === 5) {
-        milestoneData = { milestone: 5, title: "⚡ HEATED STREAK ×5", subtitle: "GIA TỐC HỎA LỰC // +15% ĐIỂM SỐ", tone: "gold", id: Date.now() };
-      } else if (newCombo === 10) {
-        milestoneData = { milestone: 10, title: "🔥 HYPER VELOCITY ×10", subtitle: "TỐC ĐỘ PHẢN XẠ CỰC ĐẠI // +30% ĐIỂM SỐ", tone: "violet", id: Date.now() };
-      } else if (newCombo === 15) {
-        milestoneData = { milestone: 15, title: "🚀 APEX STRIKER ×15", subtitle: "PHẢN XẠ TUYỆT ĐỐI // +45% ĐIỂM SỐ", tone: "violet", id: Date.now() };
-      } else if (newCombo === 20) {
-        milestoneData = { milestone: 20, title: "⚡ GODLIKE TYPIST ×20", subtitle: "BẬC THẦY GÕ PHÍM // +60% ĐIỂM SỐ", tone: "rose", id: Date.now() };
-      } else if (newCombo === 25) {
-        milestoneData = { milestone: 25, title: "💥 UNSTOPPABLE FORCE ×25", subtitle: "CHIẾN HẠM BẤT KHẢ CHIẾN BẠI // +75% ĐIỂM SỐ", tone: "rose", id: Date.now() };
-      } else if (newCombo >= 30 && (newCombo === 30 || newCombo % 10 === 0)) {
-        milestoneData = { milestone: newCombo, title: `🌟 SUPERNOVA OVERLOAD ×${newCombo}`, subtitle: "CỰC QUANG VŨ TRỤ // TỐI ĐA HỆ SỐ ĐIỂM", tone: "cyan", id: Date.now() };
-      }
+      const milestoneData = getComboMilestoneData(newCombo, hit.posX, Math.max(8, hit.posY));
 
       if (milestoneData) {
         soundManager.playComboMilestone(milestoneData.milestone);
       }
+
+      const shouldShake = hit.type === "MINI_BOSS" || !!milestoneData || (newCombo >= 5 && newCombo % 5 === 0);
 
       set({
         targets: updatedTargets,
@@ -812,15 +831,27 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
         creditsEarned: creditsEarned + creditDelta,
         hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + chargeDelta),
         lastLaserTarget: { x: hit.posX, y: Math.max(5, hit.posY) },
-        activeComboMilestone: milestoneData || get().activeComboMilestone,
-        screenShake: hit.type === "MINI_BOSS" || (newCombo >= 10 && newCombo % 10 === 0),
+        activeComboMilestone: milestoneData ? milestoneData : get().activeComboMilestone,
+        screenShake: shouldShake ? true : get().screenShake,
         freezeTimer: newFreeze,
         floatingTexts: extraFloating
       });
 
       setTimeout(() => {
-        set({ lastLaserTarget: null, screenShake: false });
+        set({ lastLaserTarget: null });
       }, GAME_CONFIG.VISUALS.laserBeamDurationMs);
+
+      if (shouldShake) {
+        setTimeout(() => {
+          set({ screenShake: false });
+        }, 400);
+      }
+
+      if (milestoneData) {
+        setTimeout(() => {
+          set({ activeComboMilestone: null });
+        }, 1500);
+      }
 
       const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
       if (aliveLeft === 0) {
@@ -838,10 +869,10 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       const prevCombo = get().combo;
       if (prevCombo >= 5) {
         soundManager.playComboBreak();
-        set({ combo: 0, weakWords: newWeakWords, comboBreakActive: true });
+        set({ combo: 0, weakWords: newWeakWords, comboBreakActive: true, activeComboMilestone: null });
         setTimeout(() => set({ comboBreakActive: false }), 600);
       } else {
-        set({ combo: 0, weakWords: newWeakWords });
+        set({ combo: 0, weakWords: newWeakWords, activeComboMilestone: null });
       }
 
       return false;
@@ -1068,6 +1099,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       creditsBalance: newBalance,
       creditsEarned: 0,
       combo: 0,
+      activeComboMilestone: null,
       isTransitioning: false,
       waveTransition: { active: false, phase: "none", clearedWave: 0, incomingWave: 1, isBoss: false }
     });
@@ -1149,6 +1181,12 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       chargeDelta = hit.type === "MINI_BOSS" ? GAME_CONFIG.PLAYER.hyperBeamChargePerBossKill : GAME_CONFIG.PLAYER.hyperBeamChargePerKill;
     }
 
+    const milestoneData = getComboMilestoneData(newCombo, hit.posX, Math.max(8, hit.posY));
+    if (milestoneData) {
+      soundManager.playComboMilestone(milestoneData.milestone);
+    }
+    const shouldShake = hit.type === "MINI_BOSS" || !!milestoneData;
+
     set({
       targets: updatedTargets,
       score: Math.round(score + scoreDelta),
@@ -1157,12 +1195,25 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       creditsEarned: creditsEarned + creditDelta,
       hyperBeamCharge: Math.min(GAME_CONFIG.PLAYER.hyperBeamMaxCharge, hyperBeamCharge + chargeDelta),
       lastLaserTarget: { x: hit.posX, y: Math.max(5, hit.posY) },
-      screenShake: hit.type === "MINI_BOSS"
+      activeComboMilestone: milestoneData ? milestoneData : get().activeComboMilestone,
+      screenShake: shouldShake ? true : get().screenShake
     });
 
     setTimeout(() => {
-      set({ lastLaserTarget: null, screenShake: false });
+      set({ lastLaserTarget: null });
     }, GAME_CONFIG.VISUALS.laserBeamDurationMs);
+
+    if (shouldShake) {
+      setTimeout(() => {
+        set({ screenShake: false });
+      }, 400);
+    }
+
+    if (milestoneData) {
+      setTimeout(() => {
+        set({ activeComboMilestone: null });
+      }, 1500);
+    }
 
     const aliveLeft = updatedTargets.filter((t) => !t.isDead).length;
     if (aliveLeft === 0) {
@@ -1245,11 +1296,11 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
 
     if (nextHp <= 0) {
       if (screen === "sandbox") {
-        set({ hp: maxHp, dangerZoneActive: false });
+        set({ hp: maxHp, dangerZoneActive: false, combo: 0, activeComboMilestone: null });
         return;
       }
       soundManager.switchBgm("lobby");
-      set({ hp: 0, shield: nextShield, screen: "debrief", dangerZoneActive: false });
+      set({ hp: 0, shield: nextShield, screen: "debrief", dangerZoneActive: false, combo: 0, activeComboMilestone: null });
 
       recordMatchFinishApi({
         score,
@@ -1294,9 +1345,96 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
       dangerZoneActive: false,
       screenShake: false,
       inboundBoss: false,
+      activeComboMilestone: null,
       isTransitioning: false,
       waveTransition: { active: false, phase: "none", clearedWave: 0, incomingWave: 1, isBoss: false }
     });
+  },
+
+  setCombo: (val: number) => {
+    const nextVal = Math.max(0, val);
+    const milestoneData = getComboMilestoneData(nextVal, 50, 35);
+    if (milestoneData) {
+      soundManager.playComboMilestone(milestoneData.milestone);
+    }
+    set((s) => ({
+      combo: nextVal,
+      bestCombo: Math.max(s.bestCombo, nextVal),
+      activeComboMilestone: milestoneData ? milestoneData : (nextVal === 0 ? null : s.activeComboMilestone),
+      screenShake: milestoneData ? true : s.screenShake
+    }));
+    if (milestoneData) {
+      setTimeout(() => {
+        set({ screenShake: false });
+      }, 400);
+      setTimeout(() => {
+        set({ activeComboMilestone: null });
+      }, 1500);
+    }
+  },
+
+  incrementCombo: (amt: number) => {
+    const nextVal = Math.max(0, get().combo + amt);
+    const milestoneData = getComboMilestoneData(nextVal, 50, 35);
+    if (milestoneData) {
+      soundManager.playComboMilestone(milestoneData.milestone);
+    }
+    set((s) => ({
+      combo: nextVal,
+      bestCombo: Math.max(s.bestCombo, nextVal),
+      activeComboMilestone: milestoneData ? milestoneData : (nextVal === 0 ? null : s.activeComboMilestone),
+      screenShake: milestoneData ? true : s.screenShake
+    }));
+    if (milestoneData) {
+      setTimeout(() => {
+        set({ screenShake: false });
+      }, 400);
+      setTimeout(() => {
+        set({ activeComboMilestone: null });
+      }, 1500);
+    }
+  },
+
+  triggerComboMilestoneTest: (milestone: number) => {
+    const milestoneData = getComboMilestoneData(milestone, 50, 35) || {
+      milestone,
+      title: `🌟 SUPERNOVA OVERLOAD ×${milestone}`,
+      subtitle: "CỰC QUANG VŨ TRỤ // TỐI ĐA HỆ SỐ ĐIỂM",
+      tone: "cyan",
+      id: Date.now() + Math.random(),
+      x: 50,
+      y: 35
+    };
+
+    soundManager.playComboMilestone(milestone);
+    set({
+      combo: milestone,
+      bestCombo: Math.max(get().bestCombo, milestone),
+      activeComboMilestone: milestoneData,
+      screenShake: true
+    });
+
+    setTimeout(() => {
+      set({ screenShake: false });
+    }, 400);
+    setTimeout(() => {
+      set({ activeComboMilestone: null });
+    }, 1500);
+  },
+
+  triggerScreenShakeTest: () => {
+    set({ screenShake: true });
+    setTimeout(() => {
+      set({ screenShake: false });
+    }, 400);
+  },
+
+  triggerComboBreakTest: () => {
+    soundManager.playComboBreak();
+    set({ combo: 0, comboBreakActive: true });
+    setTimeout(() => {
+      set({ comboBreakActive: false });
+    }, 600);
   },
 
   tickGameLoop: (delta) => {
@@ -1400,6 +1538,7 @@ export const useAirDefenseStore = create<AirDefenseState>((set, get) => ({
           hp: nextHp,
           shield: nextShield,
           combo: 0,
+          activeComboMilestone: null,
           comboBreakActive: shouldBreak,
           targets: remainingTargets,
           weakWords: missedList,
